@@ -86,7 +86,7 @@ const createOrUpdatePayment = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { customerId, amount, month, year } = req.body;
+    const { customerId, amount, month, year, method } = req.body;
 
     if (!customerId || !amount || !month || !year) {
       return res.status(400).json({ error: 'All fields are required' });
@@ -121,6 +121,7 @@ const createOrUpdatePayment = async (req, res) => {
         where: { id: existingPayment.id },
         data: {
           amount: parseFloat(amount),
+          method: method || 'CASH',
           creatorId: req.user.id
         },
         include: {
@@ -134,6 +135,7 @@ const createOrUpdatePayment = async (req, res) => {
           amount: parseFloat(amount),
           month: parseInt(month),
           year: parseInt(year),
+          method: method || 'CASH',
           userId: req.ownerId,
           creatorId: req.user.id
         },

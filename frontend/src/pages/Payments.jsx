@@ -30,12 +30,14 @@ export default function Payments({ user }) {
   const [modalMonth, setModalMonth] = useState(new Date().getMonth() + 1)
   const [modalYear, setModalYear] = useState(new Date().getFullYear())
   const [modalAmount, setModalAmount] = useState('')
+  const [modalMethod, setModalMethod] = useState('CASH')
 
   const resetModal = () => {
     setModalCustomerId('')
     setModalMonth(new Date().getMonth() + 1)
     setModalYear(new Date().getFullYear())
     setModalAmount('')
+    setModalMethod('CASH')
   }
 
   const handleRecordPayment = async (e) => {
@@ -46,7 +48,8 @@ export default function Payments({ user }) {
         customerId: parseInt(modalCustomerId),
         amount: parseFloat(modalAmount),
         month: parseInt(modalMonth),
-        year: parseInt(modalYear)
+        year: parseInt(modalYear),
+        method: modalMethod
       })
       setSuccess(response.data.message || 'Payment recorded successfully!')
       setIsModalOpen(false)
@@ -326,6 +329,9 @@ export default function Payments({ user }) {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Payment Date
                   </th>
                   {!isCustomer && (
@@ -360,6 +366,13 @@ export default function Payments({ user }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(payment.status)}`}>
                         {payment.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                        payment.method === 'ONLINE' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {payment.method || 'CASH'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -438,17 +451,31 @@ export default function Payments({ user }) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                <input
-                  type="number"
-                  value={modalAmount}
-                  onChange={(e) => setModalAmount(e.target.value)}
-                  placeholder="Enter payment amount"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  min="1"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={modalAmount}
+                    onChange={(e) => setModalAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    min="1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <select
+                    value={modalMethod}
+                    onChange={(e) => setModalMethod(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  >
+                    <option value="CASH">Cash</option>
+                    <option value="ONLINE">Online</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
