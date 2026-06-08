@@ -294,6 +294,28 @@ export default function Dashboard({ user }) {
         </div>
       </div>
 
+      {/* Today's Collection Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Cash Collection</p>
+            <p className="text-2xl font-bold text-amber-600 mt-1">₹{stats?.stats.todayCashCollected || 0}</p>
+          </div>
+          <div className="w-12 h-12 text-amber-600 bg-amber-50 rounded-xl flex items-center justify-center text-xl">
+            💵
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Online Collection</p>
+            <p className="text-2xl font-bold text-purple-600 mt-1">₹{stats?.stats.todayOnlineCollected || 0}</p>
+          </div>
+          <div className="w-12 h-12 text-purple-600 bg-purple-50 rounded-xl flex items-center justify-center text-xl">
+            🌐
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's Product Sales Breakdown */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
@@ -346,11 +368,11 @@ export default function Dashboard({ user }) {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50/70">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee Name</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
                       <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Customers Managed</th>
-                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Payments Processed</th>
-                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Collected Dues</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Cash Collected</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Online Collected</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Collected</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -358,18 +380,19 @@ export default function Dashboard({ user }) {
                       <tr key={emp.id} className="hover:bg-gray-50/40 transition">
                         <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">
                           {emp.name}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {emp.email}
+                          <span className="block text-xs text-gray-400 font-normal">{emp.email}</span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-center font-medium text-indigo-700">
                           {emp.customersManagedCount}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-600">
-                          ₹{emp.totalPaymentsManaged}
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold text-amber-600">
+                          ₹{emp.cashCollected || 0}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold text-purple-600">
+                          ₹{emp.onlineCollected || 0}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-emerald-600">
-                          ₹{emp.totalPaymentsCollected}
+                          ₹{emp.totalPaymentsCollected || 0}
                         </td>
                       </tr>
                     ))}

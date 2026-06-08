@@ -108,6 +108,21 @@ const getDashboardStats = async (req, res) => {
 
     const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
 
+    // Get today's paid payments for cash/online daily metrics
+    const todayPayments = await prisma.payment.findMany({
+      where: {
+        userId: ownerId,
+        status: 'PAID',
+        paymentDate: {
+          gte: today,
+          lt: tomorrow
+        }
+      }
+    });
+
+    const todayCashCollected = todayPayments.filter(p => p.method === 'CASH').reduce((sum, p) => sum + Number(p.amount), 0);
+    const todayOnlineCollected = todayPayments.filter(p => p.method === 'ONLINE').reduce((sum, p) => sum + Number(p.amount), 0);
+
     // Get monthly sales
     const monthlyPurchases = await prisma.purchase.findMany({
       where: {
@@ -192,7 +207,7 @@ const getDashboardStats = async (req, res) => {
         // Payments recorded by this employee
         const recordedPayments = await prisma.payment.findMany({
           where: { creatorId: emp.id },
-          select: { customerId: true, amount: true, status: true }
+          select: { customerId: true, amount: true, status: true, method: true }
         });
         const customerIdsPaid = recordedPayments.map(p => p.customerId);
 
@@ -205,6 +220,8 @@ const getDashboardStats = async (req, res) => {
 
         const totalPaymentsManaged = recordedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
         const totalPaymentsCollected = recordedPayments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + Number(p.amount), 0);
+        const cashCollected = recordedPayments.filter(p => p.status === 'PAID' && p.method === 'CASH').reduce((sum, p) => sum + Number(p.amount), 0);
+        const onlineCollected = recordedPayments.filter(p => p.status === 'PAID' && p.method === 'ONLINE').reduce((sum, p) => sum + Number(p.amount), 0);
 
         return {
           id: emp.id,
@@ -212,7 +229,9 @@ const getDashboardStats = async (req, res) => {
           email: emp.email,
           customersManagedCount: allManagedCustomerIds.size,
           totalPaymentsManaged,
-          totalPaymentsCollected
+          totalPaymentsCollected,
+          cashCollected,
+          onlineCollected
         };
       }));
     }
@@ -223,7 +242,9 @@ const getDashboardStats = async (req, res) => {
         todaySales,
         pendingPayments: pendingPayments.length,
         pendingAmount,
-        monthlySales
+        monthlySales,
+        todayCashCollected,
+        todayOnlineCollected
       },
       recentPurchases,
       topCustomers,
