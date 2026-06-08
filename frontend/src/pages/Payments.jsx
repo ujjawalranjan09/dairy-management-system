@@ -151,8 +151,8 @@ export default function Payments({ user }) {
   }
 
   const calculateTotals = () => {
-    const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0)
-    const paidAmount = payments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + p.amount, 0)
+    const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    const paidAmount = payments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + Number(p.amount), 0)
     const pendingAmount = totalAmount - paidAmount
     return { totalAmount, paidAmount, pendingAmount }
   }
