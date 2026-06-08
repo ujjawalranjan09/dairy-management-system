@@ -75,8 +75,28 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Seed default admin if database is empty
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await prisma.user.create({
+        data: {
+          name: 'System Admin',
+          email: 'admin@dairy.com',
+          password: hashedPassword,
+          role: 'ADMIN'
+        }
+      });
+      console.log('Seeded default admin user: admin@dairy.com / admin123');
+    }
+  } catch (error) {
+    console.error('Failed to seed default admin:', error);
+  }
 });
 
 module.exports = app;
