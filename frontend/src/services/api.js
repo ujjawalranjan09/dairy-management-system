@@ -73,6 +73,7 @@ export const paymentAPI = {
   getPending: () => api.get('/payments/pending'),
   create: (paymentData) => api.post('/payments', paymentData),
   markAsPaid: (id) => api.put(`/payments/${id}/mark-paid`),
+  markAsFailed: (id) => api.put(`/payments/${id}/mark-failed`),
 }
 
 // Dashboard endpoints

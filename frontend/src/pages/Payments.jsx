@@ -150,10 +150,27 @@ export default function Payments({ user }) {
     }
   }
 
+  const markAsFailed = async (paymentId) => {
+    try {
+      setLoading(true)
+      await paymentAPI.markAsFailed(paymentId)
+      setPayments(payments.map(p => 
+        p.id === paymentId ? { ...p, status: 'FAILED', paymentDate: null } : p
+      ))
+      setSuccess('Payment marked as failed successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError('Failed to mark payment as failed')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const calculateTotals = () => {
     const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0)
     const paidAmount = payments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + Number(p.amount), 0)
-    const pendingAmount = totalAmount - paidAmount
+    const pendingAmount = payments.filter(p => p.status === 'PENDING').reduce((sum, p) => sum + Number(p.amount), 0)
     return { totalAmount, paidAmount, pendingAmount }
   }
 
@@ -162,6 +179,7 @@ export default function Payments({ user }) {
       case 'PAID': return 'bg-green-100 text-green-800'
       case 'PARTIALLY PAID': return 'bg-blue-100 text-blue-800'
       case 'PENDING': return 'bg-yellow-100 text-yellow-800'
+      case 'FAILED': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -264,6 +282,7 @@ export default function Payments({ user }) {
               <option value="">All Status</option>
               <option value="PENDING">Pending</option>
               <option value="PAID">Paid</option>
+              <option value="FAILED">Failed</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -379,20 +398,35 @@ export default function Payments({ user }) {
                       {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-IN') : 'Not paid'}
                     </td>
                     {!isCustomer && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {payment.status === 'PENDING' && (
-                          <button
-                            onClick={() => markAsPaid(payment.id)}
-                            className="text-green-600 hover:text-green-900 flex items-center"
-                          >
-                            <CheckCircle className="w-5 h-5 mr-1" />
-                            Mark as Paid
-                          </button>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => markAsPaid(payment.id)}
+                              className="text-green-600 hover:text-green-900 flex items-center"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Mark as Paid
+                            </button>
+                            <button
+                              onClick={() => markAsFailed(payment.id)}
+                              className="text-red-600 hover:text-red-900 flex items-center"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Mark as Failed
+                            </button>
+                          </div>
                         )}
                         {payment.status === 'PAID' && (
                           <span className="text-green-600 flex items-center">
-                            <CheckCircle className="w-5 h-5 mr-1" />
+                            <CheckCircle className="w-4 h-4 mr-1" />
                             Paid
+                          </span>
+                        )}
+                        {payment.status === 'FAILED' && (
+                          <span className="text-red-600 flex items-center">
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Failed
                           </span>
                         )}
                       </td>

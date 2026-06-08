@@ -210,9 +210,54 @@ const markAsPaid = async (req, res) => {
   }
 };
 
+const markAsFailed = async (req, res) => {
+  try {
+    if (req.userRole === ROLES.CUSTOMER) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: parseInt(id),
+        userId: req.ownerId
+      },
+      include: {
+        customer: true
+      }
+    });
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: 'FAILED',
+        paymentDate: null,
+        creatorId: req.user.id
+      },
+      include: {
+        customer: true
+      }
+    });
+
+    res.json({
+      message: 'Payment marked as failed',
+      payment: updatedPayment
+    });
+  } catch (error) {
+    console.error('Mark as failed error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllPayments,
   getPendingPayments,
   createOrUpdatePayment,
-  markAsPaid
+  markAsPaid,
+  markAsFailed
 };

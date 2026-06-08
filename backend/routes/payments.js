@@ -8,8 +8,9 @@ router.use(authenticateToken);
 
 router.get('/', paymentController.getAllPayments);
 router.get('/pending', paymentController.getPendingPayments);
-// ADMIN + EMPLOYEE can record/update payments and mark paid
+// ADMIN + EMPLOYEE can record/update payments, mark paid, or mark failed
 router.post('/', authorizeRoles(ROLES.ADMIN, ROLES.EMPLOYEE), paymentController.createOrUpdatePayment);
 router.put('/:id/mark-paid', authorizeRoles(ROLES.ADMIN, ROLES.EMPLOYEE), paymentController.markAsPaid);
+router.put('/:id/mark-failed', authorizeRoles(ROLES.ADMIN, ROLES.EMPLOYEE), paymentController.markAsFailed);
 
 module.exports = router;
