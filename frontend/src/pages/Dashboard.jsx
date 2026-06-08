@@ -20,15 +20,16 @@ export default function Dashboard({ user }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     fetchStats()
-  }, [])
+  }, [selectedDate])
 
   const fetchStats = async () => {
     try {
       setLoading(true)
-      const response = await dashboardAPI.getStats()
+      const response = await dashboardAPI.getStats({ date: selectedDate })
       setStats(response.data)
     } catch (err) {
       setError('Failed to load dashboard stats')
@@ -78,6 +79,30 @@ export default function Dashboard({ user }) {
           </div>
           <div className="absolute right-0 bottom-0 top-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-center">
             <Activity className="w-48 h-48 text-white" />
+          </div>
+        </div>
+
+        {/* Date Filter Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">Displaying Statistics For:</h2>
+            <p className="text-xs text-gray-505">Select any date to view historical daily summaries</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-gray-700"
+            />
+            {selectedDate !== new Date().toISOString().split('T')[0] && (
+              <button
+                onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+              >
+                Reset to Today
+              </button>
+            )}
           </div>
         </div>
 
@@ -248,6 +273,30 @@ export default function Dashboard({ user }) {
         </div>
         <div className="absolute right-0 bottom-0 top-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-center">
           <Activity className="w-48 h-48 text-white" />
+        </div>
+      </div>
+
+      {/* Date Filter Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">Displaying Statistics For:</h2>
+          <p className="text-xs text-gray-550">Select any date to view historical daily summaries</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-gray-700"
+          />
+          {selectedDate !== new Date().toISOString().split('T')[0] && (
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+            >
+              Reset to Today
+            </button>
+          )}
         </div>
       </div>
 

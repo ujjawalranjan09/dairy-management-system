@@ -77,7 +77,7 @@ export const paymentAPI = {
 
 // Dashboard endpoints
 export const dashboardAPI = {
-  getStats: () => api.get('/dashboard/stats'),
+  getStats: (params) => api.get('/dashboard/stats', { params }),
 }
 
 export default api

@@ -7,7 +7,8 @@ const getDashboardStats = async (req, res) => {
 
     // CUSTOMER: return personal summary instead of full business dashboard
     if (req.userRole === ROLES.CUSTOMER && req.customerId) {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = req.query.date ? new Date(req.query.date) : new Date();
+      today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
       const currentMonth = new Date(); currentMonth.setDate(1); currentMonth.setHours(0,0,0,0);
@@ -44,8 +45,8 @@ const getDashboardStats = async (req, res) => {
       });
     }
 
-    // Get today's date range
-    const today = new Date();
+    // Get today's date range (or previous date selected by admin)
+    const today = req.query.date ? new Date(req.query.date) : new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
