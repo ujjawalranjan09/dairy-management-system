@@ -42,12 +42,23 @@ const getMonthlyBilling = async (req, res) => {
 
       const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
+      // Check payment status
+      const payment = await prisma.payment.findFirst({
+        where: {
+          customerId: req.customerId,
+          month: parseInt(month),
+          year: parseInt(year),
+          userId: req.ownerId
+        }
+      });
+
       return res.json({
         billing: [{
           customer,
           productBreakdown,
           total,
-          purchaseCount: purchases.length
+          purchaseCount: purchases.length,
+          paymentStatus: payment ? payment.status : 'PENDING'
         }],
         month: parseInt(month),
         year: parseInt(year)
@@ -74,6 +85,15 @@ const getMonthlyBilling = async (req, res) => {
       }
     });
 
+    // Get payments for the month to attach paymentStatus
+    const payments = await prisma.payment.findMany({
+      where: {
+        userId: req.ownerId,
+        month: parseInt(month),
+        year: parseInt(year)
+      }
+    });
+
     // Group by customer and product
     const billing = customers.map(customer => {
       const customerPurchases = purchases.filter(p => p.customerId === customer.id);
@@ -94,11 +114,14 @@ const getMonthlyBilling = async (req, res) => {
 
       const total = customerPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
+      const customerPayment = payments.find(p => p.customerId === customer.id);
+
       return {
         customer,
         productBreakdown,
         total,
-        purchaseCount: customerPurchases.length
+        purchaseCount: customerPurchases.length,
+        paymentStatus: customerPayment ? customerPayment.status : 'PENDING'
       };
     }).filter(b => b.purchaseCount > 0);
 

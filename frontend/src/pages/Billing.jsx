@@ -25,19 +25,25 @@ export default function Billing({ user }) {
   }, [])
 
   useEffect(() => {
-    if (customers.length > 0) {
+    if (isCustomer || customers.length > 0) {
       fetchBilling()
     }
-  }, [selectedMonth, selectedYear, selectedCustomer])
+  }, [selectedMonth, selectedYear, selectedCustomer, customers])
 
   const fetchInitialData = async () => {
     try {
       setLoading(true)
-      const customersResponse = await customerAPI.getAll()
-      setCustomers(customersResponse.data.customers)
+      if (!isCustomer) {
+        const customersResponse = await customerAPI.getAll()
+        setCustomers(customersResponse.data.customers)
+      } else {
+        setCustomers([])
+      }
     } catch (err) {
       setError('Failed to load customers')
       console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -107,7 +113,7 @@ export default function Billing({ user }) {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 gap-4 ${isCustomer ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
           <div>
             <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-2">
               Month
@@ -138,24 +144,26 @@ export default function Billing({ user }) {
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
-              Customer (Optional)
-            </label>
-            <select
-              id="customer"
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="">All Customers</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isCustomer && (
+            <div>
+              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+                Customer (Optional)
+              </label>
+              <select
+                id="customer"
+                value={selectedCustomer}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Customers</option>
+                {customers.map(customer => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex items-end">
             <button
               onClick={fetchBilling}
@@ -205,24 +213,34 @@ export default function Billing({ user }) {
           <div className="divide-y divide-gray-200">
             {billing.map((bill, index) => (
               <div key={index} className="p-6">
-                {/* Customer Info */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
-                      <Users className="w-6 h-6 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{bill.customer.name}</h3>
-                      <p className="text-sm text-gray-600">{bill.customer.phoneNumber}</p>
-                      <p className="text-sm text-gray-500">{bill.customer.address}</p>
-                    </div>
+                {/* Customer / Bill Info */}
+                <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                  <div>
+                    {isCustomer ? (
+                      <div>
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Statement for</span>
+                        <h3 className="text-lg font-bold text-gray-900">{bill.customer.name}</h3>
+                        <p className="text-sm text-gray-500">{bill.customer.phoneNumber}</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
+                          <Users className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{bill.customer.name}</h3>
+                          <p className="text-sm text-gray-600">{bill.customer.phoneNumber}</p>
+                          <p className="text-sm text-gray-500">{bill.customer.address}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getPaymentStatusColor(bill.paymentStatus)}`}>
+                  <div className="text-right flex flex-col items-end">
+                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(bill.paymentStatus)}`}>
                       {bill.paymentStatus}
                     </span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Total: ₹{bill.total}
+                    <p className="text-lg font-extrabold text-gray-900 mt-1">
+                      ₹{bill.total}
                     </p>
                   </div>
                 </div>

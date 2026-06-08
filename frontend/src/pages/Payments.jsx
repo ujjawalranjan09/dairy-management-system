@@ -34,11 +34,17 @@ export default function Payments({ user }) {
   const fetchInitialData = async () => {
     try {
       setLoading(true)
-      const customersResponse = await customerAPI.getAll()
-      setCustomers(customersResponse.data.customers)
+      if (!isCustomer) {
+        const customersResponse = await customerAPI.getAll()
+        setCustomers(customersResponse.data.customers)
+      } else {
+        setCustomers([])
+      }
     } catch (err) {
       setError('Failed to load customers')
       console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -126,7 +132,7 @@ export default function Payments({ user }) {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className={`grid grid-cols-1 gap-4 ${isCustomer ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
           <div>
             <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-2">
               Month
@@ -157,24 +163,26 @@ export default function Payments({ user }) {
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
-              Customer
-            </label>
-            <select
-              id="customer"
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="">All Customers</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isCustomer && (
+            <div>
+              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+                Customer
+              </label>
+              <select
+                id="customer"
+                value={selectedCustomer}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Customers</option>
+                {customers.map(customer => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
               Status
@@ -238,9 +246,11 @@ export default function Payments({ user }) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
+                  {!isCustomer && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
@@ -253,25 +263,29 @@ export default function Payments({ user }) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Payment Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {!isCustomer && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {payments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                          <CreditCard className="w-5 h-5 text-indigo-600" />
+                    {!isCustomer && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                            <CreditCard className="w-5 h-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{payment.customer.name}</div>
+                            <div className="text-sm text-gray-500">{payment.customer.phoneNumber}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{payment.customer.name}</div>
-                          <div className="text-sm text-gray-500">{payment.customer.phoneNumber}</div>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       ₹{payment.amount}
                     </td>
@@ -286,23 +300,25 @@ export default function Payments({ user }) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-IN') : 'Not paid'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {payment.status === 'PENDING' && (
-                        <button
-                          onClick={() => markAsPaid(payment.id)}
-                          className="text-green-600 hover:text-green-900 flex items-center"
-                        >
-                          <CheckCircle className="w-5 h-5 mr-1" />
-                          Mark as Paid
-                        </button>
-                      )}
-                      {payment.status === 'PAID' && (
-                        <span className="text-green-600 flex items-center">
-                          <CheckCircle className="w-5 h-5 mr-1" />
-                          Paid
-                        </span>
-                      )}
-                    </td>
+                    {!isCustomer && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        {payment.status === 'PENDING' && (
+                          <button
+                            onClick={() => markAsPaid(payment.id)}
+                            className="text-green-600 hover:text-green-900 flex items-center"
+                          >
+                            <CheckCircle className="w-5 h-5 mr-1" />
+                            Mark as Paid
+                          </button>
+                        )}
+                        {payment.status === 'PAID' && (
+                          <span className="text-green-600 flex items-center">
+                            <CheckCircle className="w-5 h-5 mr-1" />
+                            Paid
+                          </span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
