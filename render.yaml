@@ -1,0 +1,40 @@
+databases:
+  # Provision a Free PostgreSQL database on Render
+  - name: dairy-db
+    plan: free
+
+services:
+  # Backend Web Service
+  - type: web
+    name: dairy-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    # Automatically syncs schema structure with the database on startup
+    startCommand: npx prisma db push && npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dairy-db
+          property: connectionString
+
+  # Frontend Static Site
+  - type: static
+    name: dairy-frontend
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: dairy-backend
+          property: url
