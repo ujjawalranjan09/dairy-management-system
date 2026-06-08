@@ -48,10 +48,10 @@ export default function Billing({ user }) {
       
       if (selectedCustomer) {
         // Fetch specific customer billing
-        const response = await billingAPI.getCustomer({
-          customerId: selectedCustomer,
-          params: { month: selectedMonth, year: selectedYear }
-        })
+        const response = await billingAPI.getCustomer(
+          selectedCustomer,
+          { month: selectedMonth, year: selectedYear }
+        )
         setBilling([response.data])
       } else {
         // Fetch monthly billing for all customers
