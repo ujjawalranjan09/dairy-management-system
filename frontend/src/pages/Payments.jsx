@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
 
 export default function Payments({ user }) {
   const isCustomer = user?.role === 'CUSTOMER'
@@ -234,22 +235,17 @@ export default function Payments({ user }) {
           </div>
           {!isCustomer && (
             <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Customer
               </label>
-              <select
-                id="customer"
+              <SearchableCustomerSelect
+                customers={customers}
                 value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Customers</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCustomer}
+                placeholder="Search customer..."
+                showAllOption={true}
+                allOptionLabel="All Customers"
+              />
             </div>
           )}
           <div>
@@ -404,17 +400,13 @@ export default function Payments({ user }) {
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                <select
+                <SearchableCustomerSelect
+                  customers={customers}
                   value={modalCustomerId}
-                  onChange={(e) => setModalCustomerId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={setModalCustomerId}
+                  placeholder="Select Customer..."
+                  required={true}
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">

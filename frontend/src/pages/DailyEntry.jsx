@@ -7,6 +7,7 @@ import {
   Save,
   PlusCircle
 } from 'lucide-react'
+import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
 
 export default function DailyEntry({ user }) {
   const canCreate = user?.role === 'ADMIN' || user?.role === 'EMPLOYEE'
@@ -157,23 +158,16 @@ export default function DailyEntry({ user }) {
           {/* Header */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Customer *
               </label>
-              <select
-                id="customer"
+              <SearchableCustomerSelect
+                customers={customers}
                 value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                required
-              >
-                <option value="">Select a customer</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.phoneNumber}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCustomer}
+                placeholder="Select a customer..."
+                required={true}
+              />
             </div>
             <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">

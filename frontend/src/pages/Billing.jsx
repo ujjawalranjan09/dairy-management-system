@@ -7,6 +7,7 @@ import {
   Download,
   Search
 } from 'lucide-react'
+import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
 
 export default function Billing({ user }) {
   const isCustomer = user?.role === 'CUSTOMER'
@@ -147,22 +148,17 @@ export default function Billing({ user }) {
           </div>
           {!isCustomer && (
             <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Customer (Optional)
               </label>
-              <select
-                id="customer"
+              <SearchableCustomerSelect
+                customers={customers}
                 value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Customers</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCustomer}
+                placeholder="Search customer..."
+                showAllOption={true}
+                allOptionLabel="All Customers"
+              />
             </div>
           )}
           <div className="flex items-end">

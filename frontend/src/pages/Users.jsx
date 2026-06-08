@@ -7,6 +7,7 @@ import {
   UserCheck,
   Eye
 } from 'lucide-react'
+import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
 
 const ROLES = {
   ADMIN: 'ADMIN',
@@ -133,18 +134,13 @@ export default function Users({ user }) {
             {formData.role === ROLES.CUSTOMER && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">Link to Existing Customer</label>
-                <select 
-                  name="customerId" 
-                  value={formData.customerId} 
-                  onChange={handleChange} 
-                  required
-                  className="w-full border rounded px-3 py-2"
-                >
-                  <option value="">-- Select Customer --</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} — {c.phoneNumber}</option>
-                  ))}
-                </select>
+                <SearchableCustomerSelect
+                  customers={customers}
+                  value={formData.customerId}
+                  onChange={(val) => setFormData(prev => ({ ...prev, customerId: val }))}
+                  placeholder="Select Customer to Link..."
+                  required={true}
+                />
                 <p className="text-xs text-gray-500 mt-1">The customer will be able to log in and see only their own purchases, bills and payments.</p>
               </div>
             )}
