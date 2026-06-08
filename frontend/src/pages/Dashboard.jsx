@@ -228,93 +228,109 @@ export default function Dashboard({ user }) {
   }
 
   // Render Admin/Employee Dashboard
+  const isEmployee = user?.role === 'EMPLOYEE'
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Overview of your dairy business</p>
+    <div className="space-y-6">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-800 via-indigo-950 to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-lg">
+        <div className="relative z-10">
+          <span className="bg-indigo-500/30 text-indigo-100 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+            {isEmployee ? 'Employee Workspace' : 'Administrator Console'}
+          </span>
+          <h1 className="text-2xl md:text-3xl font-extrabold mt-3">
+            Welcome back, {user?.name || 'User'}!
+          </h1>
+          <p className="text-slate-350 mt-2 max-w-xl text-sm md:text-base">
+            {isEmployee 
+              ? 'Record daily entries, register new customers, compile billing cycles, and record customer payments.' 
+              : 'Configure items and rates, provision employee/customer accounts, monitor transactions, and inspect growth stats.'}
+          </p>
+        </div>
+        <div className="absolute right-0 bottom-0 top-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-center">
+          <Activity className="w-48 h-48 text-white" />
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Customers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.stats.totalCustomers || 0}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Customers</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.stats.totalCustomers || 0}</p>
             </div>
-            <Users className="w-12 h-12 text-blue-500 bg-blue-100 p-2 rounded-full" />
+            <Users className="w-12 h-12 text-blue-500 bg-blue-50 p-3 rounded-xl flex items-center justify-center" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Today's Sales</p>
-              <p className="text-2xl font-bold text-gray-900">₹{stats?.stats.todaySales || 0}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Sales</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats?.stats.todaySales || 0}</p>
             </div>
-            <ShoppingCart className="w-12 h-12 text-green-500 bg-green-100 p-2 rounded-full" />
+            <ShoppingCart className="w-12 h-12 text-green-500 bg-green-50 p-3 rounded-xl flex items-center justify-center" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending Payments</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.stats.pendingPayments || 0}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pending Payments</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.stats.pendingPayments || 0}</p>
             </div>
-            <AlertTriangle className="w-12 h-12 text-yellow-500 bg-yellow-100 p-2 rounded-full" />
+            <AlertTriangle className="w-12 h-12 text-yellow-500 bg-yellow-50 p-3 rounded-xl flex items-center justify-center" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Monthly Sales</p>
-              <p className="text-2xl font-bold text-gray-900">₹{stats?.stats.monthlySales || 0}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Sales</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">₹{stats?.stats.monthlySales || 0}</p>
             </div>
-            <TrendingUp className="w-12 h-12 text-purple-500 bg-purple-100 p-2 rounded-full" />
+            <TrendingUp className="w-12 h-12 text-purple-500 bg-purple-50 p-3 rounded-xl flex items-center justify-center" />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Purchases */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Purchases</h2>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-950 mb-4">Recent Purchases</h2>
           {stats?.recentPurchases && stats.recentPurchases.length > 0 ? (
             <div className="space-y-4">
               {stats.recentPurchases.map((purchase) => (
-                <div key={purchase.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                <div key={purchase.id} className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl hover:bg-gray-100/60 transition">
                   <div>
-                    <p className="font-medium text-gray-900">{purchase.customer.name}</p>
-                    <p className="text-sm text-gray-600">{purchase.product.productName}</p>
+                    <p className="font-semibold text-gray-900">{purchase.customer.name}</p>
+                    <p className="text-xs text-gray-600">{purchase.product.productName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">₹{purchase.quantity * purchase.price}</p>
-                    <p className="text-sm text-gray-500">{new Date(purchase.date).toLocaleDateString()}</p>
+                    <p className="font-bold text-gray-950">₹{purchase.quantity * purchase.price}</p>
+                    <p className="text-xxs text-gray-400 mt-0.5">{new Date(purchase.date).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No recent purchases</p>
+            <p className="text-gray-500 text-center py-4 text-sm">No recent purchases</p>
           )}
         </div>
 
         {/* Top Customers */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Customers</h2>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-950 mb-4">Top Customers</h2>
           {stats?.topCustomers && stats.topCustomers.length > 0 ? (
             <div className="space-y-4">
               {stats.topCustomers.map((customer, index) => (
-                <div key={customer.customer.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                <div key={customer.customer.id} className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl hover:bg-gray-100/60 transition">
                   <div>
-                    <p className="font-medium text-gray-900">{customer.customer.name}</p>
-                    <p className="text-sm text-gray-600">Total: ₹{customer.total}</p>
+                    <p className="font-semibold text-gray-900">{customer.customer.name}</p>
+                    <p className="text-xs text-gray-600">Total: ₹{customer.total}</p>
                   </div>
                   <div className="text-right">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                    <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-lg">
                       #{index + 1}
                     </span>
                   </div>
@@ -322,7 +338,7 @@ export default function Dashboard({ user }) {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No customers yet</p>
+            <p className="text-gray-500 text-center py-4 text-sm">No customers yet</p>
           )}
         </div>
       </div>
