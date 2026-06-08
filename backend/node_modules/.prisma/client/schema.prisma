@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("ADMIN")   // ADMIN | EMPLOYEE | CUSTOMER
+  ownerId    Int?     @map("owner_id")    // For EMPLOYEE and CUSTOMER: references the business ADMIN
+  customerId Int?     @unique @map("customer_id") // For CUSTOMER role: links this login to a specific Customer record (one customer = one portal login)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations for data ownership (ADMIN is the owner)
+  customers Customer[]
+  products  Product[]
+  purchases Purchase[]
+  payments  Payment[]
+
+  // Self-relation: business owner (ADMIN) <-> employees/customers
+  owner     User?  @relation("BusinessUsers", fields: [ownerId], references: [id], onDelete: SetNull)
+  employees User[] @relation("BusinessUsers")
+
+  // Link to Customer record for CUSTOMER role users
+  linkedCustomer Customer? @relation("CustomerPortalUser", fields: [customerId], references: [id])
+
+  @@index([ownerId])
+  @@index([customerId])
+  @@map("users")
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String
+  phoneNumber String   @map("phone_number")
+  address     String?
+  userId      Int      @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+  payments  Payment[]
+
+  // Portal login for this customer (CUSTOMER role user)
+  portalUser User? @relation("CustomerPortalUser")
+
+  @@index([userId])
+  @@map("customers")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  productName String   @map("product_name")
+  price       Decimal
+  unit        String
+  userId      Int      @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchases Purchase[]
+
+  @@index([userId])
+  @@map("products")
+}
+
+model Purchase {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  productId  Int      @map("product_id")
+  quantity   Int
+  price      Decimal
+  date       DateTime
+  userId     Int      @map("user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([date])
+  @@index([userId])
+  @@map("purchases")
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  customerId  Int      @map("customer_id")
+  amount      Decimal
+  month       Int
+  year        Int
+  paymentDate DateTime? @map("payment_date")
+  status      String   @default("PENDING")
+  userId      Int      @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, month, year, userId])
+  @@index([customerId])
+  @@index([month, year])
+  @@index([userId])
+  @@map("payments")
+}
