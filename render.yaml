@@ -26,8 +26,9 @@ services:
           property: connectionString
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: dairy-frontend
+    env: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
