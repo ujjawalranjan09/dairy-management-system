@@ -62,7 +62,7 @@ const getDashboardStats = async (req, res) => {
       where: { userId: ownerId }
     });
 
-    // Get today's sales
+    // Get today's sales (with product info)
     const todayPurchases = await prisma.purchase.findMany({
       where: {
         userId: ownerId,
@@ -70,10 +70,33 @@ const getDashboardStats = async (req, res) => {
           gte: today,
           lt: tomorrow
         }
+      },
+      include: {
+        product: true
       }
     });
 
     const todaySales = todayPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+
+    // Calculate today's product sales breakdown
+    const productSalesMap = {};
+    todayPurchases.forEach(p => {
+      const prodId = p.productId;
+      if (p.product) {
+        if (!productSalesMap[prodId]) {
+          productSalesMap[prodId] = {
+            productId: prodId,
+            productName: p.product.productName,
+            unit: p.product.unit,
+            quantity: 0,
+            totalSales: 0
+          };
+        }
+        productSalesMap[prodId].quantity += p.quantity;
+        productSalesMap[prodId].totalSales += p.quantity * Number(p.price);
+      }
+    });
+    const todayProductSales = Object.values(productSalesMap);
 
     // Get pending payments
     const pendingPayments = await prisma.payment.findMany({
@@ -125,19 +148,74 @@ const getDashboardStats = async (req, res) => {
 
     const customerTotals = customerPurchases.reduce((acc, p) => {
       const customerId = p.customerId;
-      if (!acc[customerId]) {
-        acc[customerId] = {
-          customer: p.customer,
-          total: 0
-        };
+      if (p.customer) {
+        if (!acc[customerId]) {
+          acc[customerId] = {
+            customer: p.customer,
+            total: 0
+          };
+        }
+        acc[customerId].total += p.quantity * p.price;
       }
-      acc[customerId].total += p.quantity * p.price;
       return acc;
     }, {});
 
     const topCustomers = Object.values(customerTotals)
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
+
+    // Get employee stats (Admin view only)
+    let employeeStats = [];
+    if (req.userRole === ROLES.ADMIN) {
+      const employees = await prisma.user.findMany({
+        where: {
+          ownerId: ownerId,
+          role: 'EMPLOYEE'
+        }
+      });
+
+      employeeStats = await Promise.all(employees.map(async (emp) => {
+        // Customers created by this employee
+        const createdCustomers = await prisma.customer.findMany({
+          where: { creatorId: emp.id },
+          select: { id: true }
+        });
+        const customerIdsCreated = createdCustomers.map(c => c.id);
+
+        // Purchases recorded by this employee
+        const recordedPurchases = await prisma.purchase.findMany({
+          where: { creatorId: emp.id },
+          select: { customerId: true }
+        });
+        const customerIdsPurchased = recordedPurchases.map(p => p.customerId);
+
+        // Payments recorded by this employee
+        const recordedPayments = await prisma.payment.findMany({
+          where: { creatorId: emp.id },
+          select: { customerId: true, amount: true, status: true }
+        });
+        const customerIdsPaid = recordedPayments.map(p => p.customerId);
+
+        // Union of all customer IDs managed by this employee
+        const allManagedCustomerIds = new Set([
+          ...customerIdsCreated,
+          ...customerIdsPurchased,
+          ...customerIdsPaid
+        ]);
+
+        const totalPaymentsManaged = recordedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const totalPaymentsCollected = recordedPayments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + Number(p.amount), 0);
+
+        return {
+          id: emp.id,
+          name: emp.name,
+          email: emp.email,
+          customersManagedCount: allManagedCustomerIds.size,
+          totalPaymentsManaged,
+          totalPaymentsCollected
+        };
+      }));
+    }
 
     res.json({
       stats: {
@@ -148,7 +226,9 @@ const getDashboardStats = async (req, res) => {
         monthlySales
       },
       recentPurchases,
-      topCustomers
+      topCustomers,
+      todayProductSales,
+      employeeStats
     });
   } catch (error) {
     console.error('Get dashboard stats error:', error);

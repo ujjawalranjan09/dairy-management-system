@@ -106,7 +106,8 @@ const createCustomer = async (req, res) => {
         name,
         phoneNumber,
         address,
-        userId: req.ownerId
+        userId: req.ownerId,
+        creatorId: req.user.id
       }
     });
 

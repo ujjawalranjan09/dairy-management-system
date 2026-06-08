@@ -184,7 +184,8 @@ const createPurchase = async (req, res) => {
         quantity: parseInt(quantity),
         price: product.price,
         date: date ? new Date(date) : new Date(),
-        userId: req.ownerId
+        userId: req.ownerId,
+        creatorId: req.user.id
       },
       include: {
         customer: true,

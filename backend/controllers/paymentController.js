@@ -120,7 +120,8 @@ const createOrUpdatePayment = async (req, res) => {
       payment = await prisma.payment.update({
         where: { id: existingPayment.id },
         data: {
-          amount: parseFloat(amount)
+          amount: parseFloat(amount),
+          creatorId: req.user.id
         },
         include: {
           customer: true
@@ -133,7 +134,8 @@ const createOrUpdatePayment = async (req, res) => {
           amount: parseFloat(amount),
           month: parseInt(month),
           year: parseInt(year),
-          userId: req.ownerId
+          userId: req.ownerId,
+          creatorId: req.user.id
         },
         include: {
           customer: true
@@ -177,7 +179,8 @@ const markAsPaid = async (req, res) => {
       where: { id: parseInt(id) },
       data: {
         status: 'PAID',
-        paymentDate: new Date()
+        paymentDate: new Date(),
+        creatorId: req.user.id
       },
       include: {
         customer: true

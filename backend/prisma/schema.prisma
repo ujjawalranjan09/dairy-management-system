@@ -32,6 +32,10 @@ model User {
   // Link to Customer record for CUSTOMER role users
   linkedCustomer Customer? @relation("CustomerPortalUser", fields: [customerId], references: [id])
 
+  creatorCustomers Customer[] @relation("CreatorCustomers")
+  creatorPurchases Purchase[] @relation("CreatorPurchases")
+  creatorPayments  Payment[]  @relation("CreatorPayments")
+
   @@index([ownerId])
   @@index([customerId])
   @@map("users")
@@ -53,7 +57,11 @@ model Customer {
   // Portal login for this customer (CUSTOMER role user)
   portalUser User? @relation("CustomerPortalUser")
 
+  creatorId   Int?     @map("creator_id")
+  creator     User?    @relation("CreatorCustomers", fields: [creatorId], references: [id], onDelete: SetNull)
+
   @@index([userId])
+  @@index([creatorId])
   @@map("customers")
 }
 
@@ -87,10 +95,14 @@ model Purchase {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  creatorId  Int?     @map("creator_id")
+  creator    User?    @relation("CreatorPurchases", fields: [creatorId], references: [id], onDelete: SetNull)
+
   @@index([customerId])
   @@index([productId])
   @@index([date])
   @@index([userId])
+  @@index([creatorId])
   @@map("purchases")
 }
 
@@ -109,9 +121,13 @@ model Payment {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
+  creatorId   Int?     @map("creator_id")
+  creator     User?    @relation("CreatorPayments", fields: [creatorId], references: [id], onDelete: SetNull)
+
   @@unique([customerId, month, year, userId])
   @@index([customerId])
   @@index([month, year])
   @@index([userId])
+  @@index([creatorId])
   @@map("payments")
 }

@@ -295,6 +295,95 @@ export default function Dashboard({ user }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Today's Product Sales Breakdown */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+          <h2 className="text-lg font-bold text-gray-950 mb-1 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Today's Product Sales Breakdown
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">Quantity and total sales revenue of each product sold today</p>
+          {stats?.todayProductSales && stats.todayProductSales.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50/70">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Quantity Sold</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Sales</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {stats.todayProductSales.map((item) => (
+                    <tr key={item.productId} className="hover:bg-gray-50/40 transition">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">
+                        {item.productName}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-600">
+                        {item.quantity} {item.unit}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-900">
+                        ₹{item.totalSales}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400 text-sm italic">
+              No products sold today yet
+            </div>
+          )}
+        </div>
+
+        {/* Employee Performance Console */}
+        {!isEmployee && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+            <h2 className="text-lg font-bold text-gray-950 mb-1">Employee Management Console</h2>
+            <p className="text-xs text-gray-500 mb-4">Summary of customers managed and payments collected by staff members</p>
+            {stats?.employeeStats && stats.employeeStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50/70">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Customers Managed</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Payments Processed</th>
+                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Collected Dues</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {stats.employeeStats.map((emp) => (
+                      <tr key={emp.id} className="hover:bg-gray-50/40 transition">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-800">
+                          {emp.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {emp.email}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center font-medium text-indigo-700">
+                          {emp.customersManagedCount}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-600">
+                          ₹{emp.totalPaymentsManaged}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-emerald-600">
+                          ₹{emp.totalPaymentsCollected}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm italic">
+                No active employee records or operations logged yet
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Recent Purchases */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-bold text-gray-950 mb-4">Recent Purchases</h2>
