@@ -34,6 +34,20 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'active',
+    name: 'Dairy Management System API',
+    version: '1.0.0',
+    documentation: 'https://github.com/ujjawalranjan09/dairy-management-system',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Dairy Management System API is running' });
