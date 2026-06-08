@@ -10,9 +10,9 @@ services:
     env: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npx prisma generate
+    buildCommand: npm install && node node_modules/prisma/build/index.js generate
     # Automatically syncs schema structure with the database on startup
-    startCommand: npx prisma db push && npm start
+    startCommand: node node_modules/prisma/build/index.js db push && npm start
     envVars:
       - key: PORT
         value: 5000
