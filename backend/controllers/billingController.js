@@ -43,7 +43,7 @@ const getMonthlyBilling = async (req, res) => {
       const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
       // Check payment status
-      const payment = await prisma.payment.findFirst({
+      const payments = await prisma.payment.findMany({
         where: {
           customerId: req.customerId,
           month: parseInt(month),
@@ -52,13 +52,24 @@ const getMonthlyBilling = async (req, res) => {
         }
       });
 
+      const totalPaid = payments
+        .filter(p => p.status === 'PAID')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+      let paymentStatus = 'PENDING';
+      if (totalPaid >= total && total > 0) {
+        paymentStatus = 'PAID';
+      } else if (totalPaid > 0) {
+        paymentStatus = 'PARTIALLY PAID';
+      }
+
       return res.json({
         billing: [{
           customer,
           productBreakdown,
           total,
           purchaseCount: purchases.length,
-          paymentStatus: payment ? payment.status : 'PENDING'
+          paymentStatus
         }],
         month: parseInt(month),
         year: parseInt(year)
@@ -114,14 +125,24 @@ const getMonthlyBilling = async (req, res) => {
 
       const total = customerPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
-      const customerPayment = payments.find(p => p.customerId === customer.id);
+      const customerPayments = payments.filter(p => p.customerId === customer.id);
+      const totalPaid = customerPayments
+        .filter(p => p.status === 'PAID')
+        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+      let paymentStatus = 'PENDING';
+      if (totalPaid >= total && total > 0) {
+        paymentStatus = 'PAID';
+      } else if (totalPaid > 0) {
+        paymentStatus = 'PARTIALLY PAID';
+      }
 
       return {
         customer,
         productBreakdown,
         total,
         purchaseCount: customerPurchases.length,
-        paymentStatus: customerPayment ? customerPayment.status : 'PENDING'
+        paymentStatus
       };
     }).filter(b => b.purchaseCount > 0);
 
@@ -197,7 +218,7 @@ const getCustomerBilling = async (req, res) => {
     const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
     // Check payment status
-    const payment = await prisma.payment.findFirst({
+    const payments = await prisma.payment.findMany({
       where: {
         customerId: targetId,
         month: parseInt(month),
@@ -206,13 +227,24 @@ const getCustomerBilling = async (req, res) => {
       }
     });
 
+    const totalPaid = payments
+      .filter(p => p.status === 'PAID')
+      .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+    let paymentStatus = 'PENDING';
+    if (totalPaid >= total && total > 0) {
+      paymentStatus = 'PAID';
+    } else if (totalPaid > 0) {
+      paymentStatus = 'PARTIALLY PAID';
+    }
+
     res.json({
       customer,
       productBreakdown,
       purchases,
       total,
-      paymentStatus: payment ? payment.status : 'PENDING',
-      payment
+      paymentStatus,
+      payments
     });
   } catch (error) {
     console.error('Get customer billing error:', error);

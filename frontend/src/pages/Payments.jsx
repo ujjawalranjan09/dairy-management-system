@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { paymentAPI, customerAPI } from '../services/api'
+import { paymentAPI, customerAPI, billingAPI } from '../services/api'
 import { 
   CreditCard,
   Calendar,
@@ -59,6 +59,26 @@ export default function Payments({ user }) {
       setLoading(false)
     }
   }
+
+  // Auto-fetch bill total to pre-fill amount
+  useEffect(() => {
+    const fetchBillTotal = async () => {
+      if (modalCustomerId && modalMonth && modalYear) {
+        try {
+          const response = await billingAPI.getCustomer(modalCustomerId, {
+            month: modalMonth,
+            year: modalYear
+          })
+          if (response.data && response.data.total !== undefined) {
+            setModalAmount(response.data.total.toString())
+          }
+        } catch (err) {
+          console.error('Failed to fetch bill total:', err)
+        }
+      }
+    }
+    fetchBillTotal()
+  }, [modalCustomerId, modalMonth, modalYear])
 
   useEffect(() => {
     fetchInitialData()
@@ -136,6 +156,7 @@ export default function Payments({ user }) {
   const getPaymentStatusColor = (status) => {
     switch (status) {
       case 'PAID': return 'bg-green-100 text-green-800'
+      case 'PARTIALLY PAID': return 'bg-blue-100 text-blue-800'
       case 'PENDING': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
