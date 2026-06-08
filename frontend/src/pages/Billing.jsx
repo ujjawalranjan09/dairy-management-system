@@ -240,9 +240,22 @@ export default function Billing({ user }) {
                     <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(bill.paymentStatus)}`}>
                       {bill.paymentStatus}
                     </span>
-                    <p className="text-lg font-extrabold text-gray-900 mt-1">
-                      ₹{bill.total}
-                    </p>
+                  </div>
+                </div>
+
+                {/* Billing Summary Balance Info */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl mb-6 text-center border border-gray-100 shadow-sm">
+                  <div>
+                    <span className="text-xxs font-bold text-gray-400 uppercase tracking-wider block animate-pulse-slow">Total Bill</span>
+                    <span className="text-base font-extrabold text-gray-950 mt-1 block">₹{bill.total}</span>
+                  </div>
+                  <div className="border-x border-gray-200">
+                    <span className="text-xxs font-bold text-green-500 uppercase tracking-wider block">Paid Amount</span>
+                    <span className="text-base font-extrabold text-green-600 mt-1 block">₹{bill.totalPaid || 0}</span>
+                  </div>
+                  <div>
+                    <span className={`text-xxs font-bold uppercase tracking-wider block ${bill.remainingAmount > 0 ? 'text-amber-500' : 'text-gray-400'}`}>Remaining Dues</span>
+                    <span className={`text-base font-extrabold mt-1 block ${bill.remainingAmount > 0 ? 'text-amber-600' : 'text-gray-950'}`}>₹{bill.remainingAmount !== undefined ? bill.remainingAmount : bill.total}</span>
                   </div>
                 </div>
 

@@ -63,13 +63,17 @@ const getMonthlyBilling = async (req, res) => {
         paymentStatus = 'PARTIALLY PAID';
       }
 
+      const remainingAmount = Math.max(0, total - totalPaid);
+
       return res.json({
         billing: [{
           customer,
           productBreakdown,
           total,
           purchaseCount: purchases.length,
-          paymentStatus
+          paymentStatus,
+          totalPaid,
+          remainingAmount
         }],
         month: parseInt(month),
         year: parseInt(year)
@@ -137,12 +141,16 @@ const getMonthlyBilling = async (req, res) => {
         paymentStatus = 'PARTIALLY PAID';
       }
 
+      const remainingAmount = Math.max(0, total - totalPaid);
+
       return {
         customer,
         productBreakdown,
         total,
         purchaseCount: customerPurchases.length,
-        paymentStatus
+        paymentStatus,
+        totalPaid,
+        remainingAmount
       };
     }).filter(b => b.purchaseCount > 0);
 
