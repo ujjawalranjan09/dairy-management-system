@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id         Int      @id @default(autoincrement())
-  phone      String   @unique @map("phone")
+  phone      String   @unique @default("") @map("phone")
   email      String?  @unique
   password   String
   name       String
