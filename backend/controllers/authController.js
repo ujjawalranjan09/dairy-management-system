@@ -19,6 +19,7 @@ const signToken = (user) => {
 const sanitizeUser = (user) => ({
   id: user.id,
   name: user.name,
+  phone: user.phone,
   email: user.email,
   role: user.role || ROLES.ADMIN,
   ownerId: user.ownerId || null,
@@ -28,15 +29,14 @@ const sanitizeUser = (user) => ({
 
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, phone, password } = req.body;
 
     // Validate input
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!name || !phone || !password) {
+      return res.status(400).json({ error: 'Name, phone number and password are required' });
     }
 
     // ERP security: Public self-registration is only allowed for the very first user (initial ADMIN).
-    // After that, only existing ADMINs can create new users (employees + customer portals) via the internal Users page.
     const userCount = await prisma.user.count();
     if (userCount > 0) {
       return res.status(403).json({ 
@@ -46,11 +46,11 @@ const register = async (req, res) => {
 
     // Check if user exists (for the first-user case)
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { phone }
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'User with this phone number already exists' });
     }
 
     // Hash password
@@ -60,7 +60,7 @@ const register = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        phone,
         password: hashedPassword,
         role: ROLES.ADMIN
       }
@@ -81,16 +81,16 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!phone || !password) {
+      return res.status(400).json({ error: 'Phone number and password are required' });
     }
 
-    // Find user
+    // Find user by phone
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { phone }
     });
 
     if (!user) {
@@ -143,6 +143,7 @@ const getAllUsers = async (req, res) => {
       select: {
         id: true,
         name: true,
+        phone: true,
         email: true,
         role: true,
         ownerId: true,
@@ -165,20 +166,20 @@ const getAllUsers = async (req, res) => {
 // ADMIN only: create EMPLOYEE or CUSTOMER portal user
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, role, customerId } = req.body;
+    const { name, phone, password, role, customerId } = req.body;
     const adminId = req.ownerId; // the business owner
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ error: 'name, email, password and role are required' });
+    if (!name || !phone || !password || !role) {
+      return res.status(400).json({ error: 'name, phone, password and role are required' });
     }
 
     if (![ROLES.EMPLOYEE, ROLES.CUSTOMER].includes(role)) {
       return res.status(400).json({ error: 'role must be EMPLOYEE or CUSTOMER' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { phone } });
     if (existing) {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res.status(400).json({ error: 'User with this phone number already exists' });
     }
 
     let finalCustomerId = null;
@@ -209,7 +210,7 @@ const createUser = async (req, res) => {
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
+        phone,
         password: hashedPassword,
         role,
         ownerId: adminId,

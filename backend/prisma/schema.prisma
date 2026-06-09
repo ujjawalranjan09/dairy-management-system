@@ -3,18 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id         Int      @id @default(autoincrement())
-  email      String   @unique
+  phone      String   @unique @map("phone")
+  email      String?  @unique
   password   String
   name       String
   role       String   @default("ADMIN")   // ADMIN | EMPLOYEE | CUSTOMER
   ownerId    Int?     @map("owner_id")    // For EMPLOYEE and CUSTOMER: references the business ADMIN
-  customerId Int?     @unique @map("customer_id") // For CUSTOMER role: links this login to a specific Customer record (one customer = one portal login)
+  customerId Int?     @unique @map("customer_id") // For CUSTOMER role: links this login to a specific Customer record
 
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -36,6 +37,9 @@ model User {
   creatorPurchases Purchase[] @relation("CreatorPurchases")
   creatorPayments  Payment[]  @relation("CreatorPayments")
 
+  // Customers assigned to this employee
+  assignedCustomers Customer[] @relation("AssignedEmployee")
+
   @@index([ownerId])
   @@index([customerId])
   @@map("users")
@@ -50,9 +54,23 @@ model Customer {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Default product settings for this customer
+  defaultProductId Int?    @map("default_product_id")
+  defaultQuantity  Float?  @map("default_quantity")
+  defaultUnit      String? @map("default_unit")
+
+  // Assigned employee (for routing purposes - but others can still enter)
+  assignedEmployeeId Int? @map("assigned_employee_id")
+
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   purchases Purchase[]
   payments  Payment[]
+
+  // Default product relation
+  defaultProduct Product? @relation("CustomerDefaultProduct", fields: [defaultProductId], references: [id], onDelete: SetNull)
+
+  // Assigned employee relation
+  assignedEmployee User? @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
 
   // Portal login for this customer (CUSTOMER role user)
   portalUser User? @relation("CustomerPortalUser")
@@ -62,6 +80,8 @@ model Customer {
 
   @@index([userId])
   @@index([creatorId])
+  @@index([defaultProductId])
+  @@index([assignedEmployeeId])
   @@map("customers")
 }
 
@@ -77,6 +97,9 @@ model Product {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   purchases Purchase[]
 
+  // Customers who have this as default product
+  defaultForCustomers Customer[] @relation("CustomerDefaultProduct")
+
   @@index([userId])
   @@map("products")
 }
@@ -85,7 +108,7 @@ model Purchase {
   id         Int      @id @default(autoincrement())
   customerId Int      @map("customer_id")
   productId  Int      @map("product_id")
-  quantity   Int
+  quantity   Float
   price      Decimal
   date       DateTime
   userId     Int      @map("user_id")

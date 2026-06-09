@@ -24,6 +24,14 @@ const getAllPurchases = async (req, res) => {
 
     let where = { userId: req.ownerId };
 
+    // EMPLOYEE: Filter to show only their recorded purchases OR purchases of customers assigned to them
+    if (req.userRole === ROLES.EMPLOYEE) {
+      where.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     if (startDate && endDate) {
       where.date = {
         gte: new Date(startDate),
@@ -35,7 +43,8 @@ const getAllPurchases = async (req, res) => {
       where,
       include: {
         customer: true,
-        product: true
+        product: true,
+        creator: { select: { id: true, name: true, phone: true } }
       },
       orderBy: { date: 'desc' }
     });
@@ -69,7 +78,8 @@ const getTodayPurchases = async (req, res) => {
       where,
       include: {
         customer: true,
-        product: true
+        product: true,
+        creator: { select: { id: true, name: true, phone: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -181,7 +191,7 @@ const createPurchase = async (req, res) => {
       data: {
         customerId: parseInt(customerId),
         productId: parseInt(productId),
-        quantity: parseInt(quantity),
+        quantity: parseFloat(quantity),
         price: product.price,
         date: date ? new Date(date) : new Date(),
         userId: req.ownerId,

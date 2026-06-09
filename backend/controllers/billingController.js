@@ -80,20 +80,39 @@ const getMonthlyBilling = async (req, res) => {
       });
     }
 
-    // Get all customers for ADMIN/EMPLOYEE
+    // Get customers for ADMIN/EMPLOYEE
+    let customersWhere = { userId: req.ownerId };
+    
+    // EMPLOYEE: Filter to show only customers assigned to them OR customers who have purchases recorded by them
+    if (req.userRole === ROLES.EMPLOYEE) {
+      customersWhere.OR = [
+        { assignedEmployeeId: req.user.id },
+        { purchases: { some: { creatorId: req.user.id } } }
+      ];
+    }
+
     const customers = await prisma.customer.findMany({
-      where: { userId: req.ownerId }
+      where: customersWhere
     });
 
     // Get purchases for the month
+    let purchasesWhere = {
+      userId: req.ownerId,
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      purchasesWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const purchases = await prisma.purchase.findMany({
-      where: {
-        userId: req.ownerId,
-        date: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
+      where: purchasesWhere,
       include: {
         customer: true,
         product: true
@@ -101,12 +120,21 @@ const getMonthlyBilling = async (req, res) => {
     });
 
     // Get payments for the month to attach paymentStatus
+    let paymentsWhere = {
+      userId: req.ownerId,
+      month: parseInt(month),
+      year: parseInt(year)
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      paymentsWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const payments = await prisma.payment.findMany({
-      where: {
-        userId: req.ownerId,
-        month: parseInt(month),
-        year: parseInt(year)
-      }
+      where: paymentsWhere
     });
 
     // Group by customer and product

@@ -166,7 +166,7 @@ export default function Billing({ user }) {
       )}
 
       {/* Filters Box */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
             <div className="md:col-span-3">

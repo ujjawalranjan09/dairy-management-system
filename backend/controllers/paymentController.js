@@ -22,6 +22,14 @@ const getAllPayments = async (req, res) => {
 
     let where = { userId: req.ownerId };
 
+    // EMPLOYEE: Filter to show only their recorded payments OR payments of customers assigned to them
+    if (req.userRole === ROLES.EMPLOYEE) {
+      where.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     if (month && year) {
       where.month = parseInt(month);
       where.year = parseInt(year);

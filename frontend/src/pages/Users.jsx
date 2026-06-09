@@ -25,7 +25,7 @@ export default function Users({ user }) {
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    phone: '',
     password: '',
     role: ROLES.EMPLOYEE,
     customerId: ''
@@ -70,7 +70,7 @@ export default function Users({ user }) {
       await authAPI.createUser(payload)
       setSuccess(`${formData.role} user created successfully`)
       setShowForm(false)
-      setFormData({ name: '', email: '', password: '', role: ROLES.EMPLOYEE, customerId: '' })
+      setFormData({ name: '', phone: '', password: '', role: ROLES.EMPLOYEE, customerId: '' })
       fetchData()
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create user')
@@ -116,8 +116,8 @@ export default function Users({ user }) {
               <input name="name" value={formData.name} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
+              <label className="block text-sm font-medium mb-1">Phone Number</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required className="w-full border rounded px-3 py-2" placeholder="e.g. 9876543210" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Temporary Password</label>
@@ -177,7 +177,7 @@ export default function Users({ user }) {
               <tr key={u.id}>
                 <td className="px-6 py-4">
                   <div className="font-medium text-gray-900">{u.name}</div>
-                  <div className="text-sm text-gray-500">{u.email}</div>
+                  <div className="text-sm text-gray-500">{u.phone || u.email || '—'}</div>
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

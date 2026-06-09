@@ -1,15 +1,26 @@
 const prisma = require('../src/db');
 const { ROLES } = require('../middleware/auth');
 
+// Reusable include for customer with default product and assigned employee
+const customerInclude = {
+  defaultProduct: {
+    select: { id: true, productName: true, price: true, unit: true }
+  },
+  assignedEmployee: {
+    select: { id: true, name: true, phone: true }
+  }
+};
+
 const getAllCustomers = async (req, res) => {
   try {
-    // CUSTOMER role: customers list is not relevant; return empty or 403
+    // CUSTOMER role: customers list is not relevant; return empty
     if (req.userRole === ROLES.CUSTOMER) {
       return res.json({ customers: [] });
     }
 
     const customers = await prisma.customer.findMany({
       where: { userId: req.ownerId },
+      include: customerInclude,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -36,10 +47,11 @@ const searchCustomers = async (req, res) => {
       where: {
         userId: req.ownerId,
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
+          { name: { contains: query } },
           { phoneNumber: { contains: query } }
         ]
       },
+      include: customerInclude,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -70,6 +82,7 @@ const getCustomerById = async (req, res) => {
     const customer = await prisma.customer.findFirst({
       where,
       include: {
+        ...customerInclude,
         purchases: {
           orderBy: { date: 'desc' },
           take: 10
@@ -95,20 +108,50 @@ const createCustomer = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { name, phoneNumber, address } = req.body;
+    const { name, phoneNumber, address, defaultProductId, defaultQuantity, defaultUnit, assignedEmployeeId } = req.body;
 
     if (!name || !phoneNumber) {
       return res.status(400).json({ error: 'Name and phone number are required' });
     }
 
-    const customer = await prisma.customer.create({
-      data: {
-        name,
-        phoneNumber,
-        address,
-        userId: req.ownerId,
-        creatorId: req.user.id
+    // Build data object
+    const data = {
+      name,
+      phoneNumber,
+      address,
+      userId: req.ownerId,
+      creatorId: req.user.id
+    };
+
+    // Optional: default product assignment
+    if (defaultProductId) {
+      const product = await prisma.product.findFirst({
+        where: { id: parseInt(defaultProductId), userId: req.ownerId }
+      });
+      if (product) {
+        data.defaultProductId = parseInt(defaultProductId);
+        data.defaultQuantity = defaultQuantity ? parseFloat(defaultQuantity) : 1;
+        data.defaultUnit = defaultUnit || product.unit;
       }
+    }
+
+    // Optional: assigned employee
+    if (assignedEmployeeId) {
+      const employee = await prisma.user.findFirst({
+        where: { 
+          id: parseInt(assignedEmployeeId), 
+          ownerId: req.ownerId,
+          role: { in: [ROLES.EMPLOYEE, ROLES.ADMIN] }
+        }
+      });
+      if (employee) {
+        data.assignedEmployeeId = parseInt(assignedEmployeeId);
+      }
+    }
+
+    const customer = await prisma.customer.create({
+      data,
+      include: customerInclude
     });
 
     res.status(201).json({
@@ -128,7 +171,7 @@ const updateCustomer = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, phoneNumber, address } = req.body;
+    const { name, phoneNumber, address, defaultProductId, defaultQuantity, defaultUnit, assignedEmployeeId } = req.body;
 
     if (!name || !phoneNumber) {
       return res.status(400).json({ error: 'Name and phone number are required' });
@@ -145,13 +188,54 @@ const updateCustomer = async (req, res) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
 
+    // Build update data
+    const data = { name, phoneNumber, address };
+
+    // Handle default product - allow clearing (null) or updating
+    if (defaultProductId !== undefined) {
+      if (defaultProductId === null || defaultProductId === '') {
+        data.defaultProductId = null;
+        data.defaultQuantity = null;
+        data.defaultUnit = null;
+      } else {
+        const product = await prisma.product.findFirst({
+          where: { id: parseInt(defaultProductId), userId: req.ownerId }
+        });
+        if (product) {
+          data.defaultProductId = parseInt(defaultProductId);
+          data.defaultQuantity = defaultQuantity ? parseFloat(defaultQuantity) : (existingCustomer.defaultQuantity || 1);
+          data.defaultUnit = defaultUnit || product.unit;
+        }
+      }
+    } else if (defaultQuantity !== undefined) {
+      data.defaultQuantity = parseFloat(defaultQuantity);
+    }
+    if (defaultUnit !== undefined && defaultProductId === undefined) {
+      data.defaultUnit = defaultUnit;
+    }
+
+    // Handle assigned employee - allow clearing or updating
+    if (assignedEmployeeId !== undefined) {
+      if (assignedEmployeeId === null || assignedEmployeeId === '') {
+        data.assignedEmployeeId = null;
+      } else {
+        const employee = await prisma.user.findFirst({
+          where: {
+            id: parseInt(assignedEmployeeId),
+            ownerId: req.ownerId,
+            role: { in: [ROLES.EMPLOYEE, ROLES.ADMIN] }
+          }
+        });
+        if (employee) {
+          data.assignedEmployeeId = parseInt(assignedEmployeeId);
+        }
+      }
+    }
+
     const customer = await prisma.customer.update({
       where: { id: parseInt(id) },
-      data: {
-        name,
-        phoneNumber,
-        address
-      }
+      data,
+      include: customerInclude
     });
 
     res.json({

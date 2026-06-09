@@ -64,14 +64,23 @@ const getDashboardStats = async (req, res) => {
     });
 
     // Get today's sales (with product info)
+    let todayPurchasesWhere = {
+      userId: ownerId,
+      date: {
+        gte: today,
+        lte: tomorrow // Match same range logic
+      }
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      todayPurchasesWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const todayPurchases = await prisma.purchase.findMany({
-      where: {
-        userId: ownerId,
-        date: {
-          gte: today,
-          lt: tomorrow
-        }
-      },
+      where: todayPurchasesWhere,
       include: {
         product: true
       }
@@ -100,49 +109,86 @@ const getDashboardStats = async (req, res) => {
     const todayProductSales = Object.values(productSalesMap);
 
     // Get pending payments
+    let pendingPaymentsWhere = {
+      userId: ownerId,
+      status: 'PENDING'
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      pendingPaymentsWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const pendingPayments = await prisma.payment.findMany({
-      where: {
-        userId: ownerId,
-        status: 'PENDING'
-      }
+      where: pendingPaymentsWhere
     });
 
     const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
 
     // Get today's paid payments for cash/online daily metrics
-    const todayPayments = await prisma.payment.findMany({
-      where: {
-        userId: ownerId,
-        status: 'PAID',
-        paymentDate: {
-          gte: today,
-          lt: tomorrow
-        }
+    let todayPaymentsWhere = {
+      userId: ownerId,
+      status: 'PAID',
+      paymentDate: {
+        gte: today,
+        lt: tomorrow
       }
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      todayPaymentsWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
+    const todayPayments = await prisma.payment.findMany({
+      where: todayPaymentsWhere
     });
 
     const todayCashCollected = todayPayments.filter(p => p.method === 'CASH').reduce((sum, p) => sum + Number(p.amount), 0);
     const todayOnlineCollected = todayPayments.filter(p => p.method === 'ONLINE').reduce((sum, p) => sum + Number(p.amount), 0);
 
     // Get monthly sales
-    const monthlyPurchases = await prisma.purchase.findMany({
-      where: {
-        userId: ownerId,
-        date: {
-          gte: currentMonth,
-          lt: nextMonth
-        }
+    let monthlyPurchasesWhere = {
+      userId: ownerId,
+      date: {
+        gte: currentMonth,
+        lt: nextMonth
       }
+    };
+
+    if (req.userRole === ROLES.EMPLOYEE) {
+      monthlyPurchasesWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
+    const monthlyPurchases = await prisma.purchase.findMany({
+      where: monthlyPurchasesWhere
     });
 
     const monthlySales = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
 
     // Get recent purchases (last 5)
+    let recentPurchasesWhere = { userId: ownerId };
+    
+    if (req.userRole === ROLES.EMPLOYEE) {
+      recentPurchasesWhere.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const recentPurchases = await prisma.purchase.findMany({
-      where: { userId: ownerId },
+      where: recentPurchasesWhere,
       include: {
         customer: true,
-        product: true
+        product: true,
+        creator: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: 'desc' },
       take: 5

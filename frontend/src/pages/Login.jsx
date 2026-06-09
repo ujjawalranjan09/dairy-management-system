@@ -4,7 +4,7 @@ import { authAPI } from '../services/api'
 
 export default function Login({ onLogin }) {
   const [formData, setFormData] = useState({
-    email: '',
+    phone: '',
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
@@ -56,17 +56,17 @@ export default function Login({ onLogin }) {
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone Number
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="phone"
+                name="phone"
+                type="tel"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your email"
-                value={formData.email}
+                placeholder="Enter your phone number"
+                value={formData.phone}
                 onChange={handleChange}
               />
             </div>

@@ -466,6 +466,9 @@ export default function Dashboard({ user }) {
                   <div>
                     <p className="font-semibold text-gray-900">{purchase.customer.name}</p>
                     <p className="text-xs text-gray-600">{purchase.product.productName}</p>
+                    {purchase.creator && (
+                      <p className="text-xxs text-gray-400 font-medium mt-0.5">Recorded by: {purchase.creator.name}</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-gray-950">₹{purchase.quantity * purchase.price}</p>

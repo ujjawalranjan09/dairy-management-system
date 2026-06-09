@@ -87,12 +87,13 @@ app.listen(PORT, async () => {
       await prisma.user.create({
         data: {
           name: 'System Admin',
+          phone: '9999999999',
           email: 'admin@dairy.com',
           password: hashedPassword,
           role: 'ADMIN'
         }
       });
-      console.log('Seeded default admin user: admin@dairy.com / admin123');
+      console.log('Seeded default admin user: 9999999999 / admin123');
     }
   } catch (error) {
     console.error('Failed to seed default admin:', error);
