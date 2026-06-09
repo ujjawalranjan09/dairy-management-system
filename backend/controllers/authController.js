@@ -44,8 +44,8 @@ const register = async (req, res) => {
       });
     }
 
-    // Check if user exists (for the first-user case)
-    const existingUser = await prisma.user.findUnique({
+    // Check if user exists (using findFirst since phone constraint is temporarily non-unique)
+    const existingUser = await prisma.user.findFirst({
       where: { phone }
     });
 
@@ -88,8 +88,8 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Phone number and password are required' });
     }
 
-    // Find user by phone
-    const user = await prisma.user.findUnique({
+    // Find user by phone (using findFirst since phone constraint is temporarily non-unique)
+    const user = await prisma.user.findFirst({
       where: { phone }
     });
 
@@ -177,7 +177,7 @@ const createUser = async (req, res) => {
       return res.status(400).json({ error: 'role must be EMPLOYEE or CUSTOMER' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { phone } });
+    const existing = await prisma.user.findFirst({ where: { phone } });
     if (existing) {
       return res.status(400).json({ error: 'User with this phone number already exists' });
     }
