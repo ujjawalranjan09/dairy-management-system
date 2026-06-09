@@ -78,10 +78,12 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
-  // Seed default admin if database is empty
+  // Seed default admin if no ADMIN exists
   try {
-    const userCount = await prisma.user.count();
-    if (userCount === 0) {
+    const adminCount = await prisma.user.count({
+      where: { role: 'ADMIN' }
+    });
+    if (adminCount === 0) {
       const bcrypt = require('bcryptjs');
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await prisma.user.create({
