@@ -20,9 +20,9 @@ const getDashboardStats = async (req, res) => {
         prisma.payment.findMany({ where: { userId: ownerId, customerId: req.customerId, status: 'PENDING' } })
       ]);
 
-      const todaySales = todayPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
-      const monthlySales = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
-      const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+      const todaySales = todayPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
+      const monthlySales = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
+      const pendingAmount = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
       const recentPurchases = await prisma.purchase.findMany({
         where: { userId: ownerId, customerId: req.customerId },
@@ -68,7 +68,7 @@ const getDashboardStats = async (req, res) => {
       userId: ownerId,
       date: {
         gte: today,
-        lte: tomorrow // Match same range logic
+        lt: tomorrow
       }
     };
 
@@ -86,7 +86,7 @@ const getDashboardStats = async (req, res) => {
       }
     });
 
-    const todaySales = todayPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+    const todaySales = todayPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
     // Calculate today's product sales breakdown
     const productSalesMap = {};
@@ -125,7 +125,7 @@ const getDashboardStats = async (req, res) => {
       where: pendingPaymentsWhere
     });
 
-    const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+    const pendingAmount = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
     // Get today's paid payments for cash/online daily metrics
     let todayPaymentsWhere = {
@@ -171,7 +171,7 @@ const getDashboardStats = async (req, res) => {
       where: monthlyPurchasesWhere
     });
 
-    const monthlySales = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+    const monthlySales = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
     // Get recent purchases (last 5)
     let recentPurchasesWhere = { userId: ownerId };
@@ -217,7 +217,7 @@ const getDashboardStats = async (req, res) => {
             total: 0
           };
         }
-        acc[customerId].total += p.quantity * p.price;
+        acc[customerId].total += p.quantity * Number(p.price);
       }
       return acc;
     }, {});

@@ -78,7 +78,7 @@ const sendDailyPurchaseSummary = async () => {
           };
         }
         acc[customerId].purchases.push(purchase);
-        acc[customerId].total += purchase.quantity * purchase.price;
+        acc[customerId].total += purchase.quantity * Number(purchase.price);
         return acc;
       }, {});
 
@@ -102,14 +102,14 @@ const sendDailyPurchaseSummary = async () => {
           }
         });
 
-        const monthlyTotal = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+        const monthlyTotal = monthlyPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
         // Build message
         let message = `Hello ${customer.name}\n\n`;
         message += `Today's Dairy Purchases\n\n`;
 
         custPurchases.forEach(p => {
-          const itemTotal = p.quantity * p.price;
+          const itemTotal = p.quantity * Number(p.price);
           message += `${p.product.productName} ${p.quantity}${p.product.unit} = ₹${itemTotal}\n`;
         });
 

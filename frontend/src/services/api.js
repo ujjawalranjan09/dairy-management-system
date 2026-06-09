@@ -23,6 +23,18 @@ api.interceptors.request.use(
   }
 )
 
+// Auto-logout on expired/invalid token
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Auth endpoints
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),

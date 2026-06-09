@@ -78,24 +78,41 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   
-  // Seed default admin if phone 9999999999 does not exist
+  // Seed default admin
   try {
-    const existingAdmin = await prisma.user.findFirst({
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+
+    const adminByPhone = await prisma.user.findFirst({
       where: { phone: '9999999999' }
     });
-    if (!existingAdmin) {
-      const bcrypt = require('bcryptjs');
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      await prisma.user.create({
-        data: {
-          name: 'System Admin',
-          phone: '9999999999',
-          email: 'admin@dairy.com',
-          password: hashedPassword,
-          role: 'ADMIN'
-        }
+
+    if (!adminByPhone) {
+      const adminByEmail = await prisma.user.findFirst({
+        where: { email: 'admin@dairy.com' }
       });
-      console.log('Seeded default admin user: 9999999999 / admin123');
+
+      if (adminByEmail) {
+        await prisma.user.update({
+          where: { id: adminByEmail.id },
+          data: {
+            phone: '9999999999',
+            password: hashedPassword
+          }
+        });
+        console.log('Updated existing admin user with phone 9999999999 and password admin123');
+      } else {
+        await prisma.user.create({
+          data: {
+            name: 'System Admin',
+            phone: '9999999999',
+            email: 'admin@dairy.com',
+            password: hashedPassword,
+            role: 'ADMIN'
+          }
+        });
+        console.log('Seeded default admin user: 9999999999 / admin123');
+      }
     }
   } catch (error) {
     console.error('Failed to seed default admin:', error);

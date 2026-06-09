@@ -36,11 +36,11 @@ const getMonthlyBilling = async (req, res) => {
           acc[productName] = { quantity: 0, total: 0, price: purchase.price };
         }
         acc[productName].quantity += purchase.quantity;
-        acc[productName].total += purchase.quantity * purchase.price;
+        acc[productName].total += purchase.quantity * Number(purchase.price);
         return acc;
       }, {});
 
-      const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+      const total = purchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
       // Check payment status
       const payments = await prisma.payment.findMany({
@@ -151,11 +151,11 @@ const getMonthlyBilling = async (req, res) => {
           };
         }
         acc[productName].quantity += purchase.quantity;
-        acc[productName].total += purchase.quantity * purchase.price;
+        acc[productName].total += purchase.quantity * Number(purchase.price);
         return acc;
       }, {});
 
-      const total = customerPurchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+      const total = customerPurchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
       const customerPayments = payments.filter(p => p.customerId === customer.id);
       const totalPaid = customerPayments
@@ -247,11 +247,11 @@ const getCustomerBilling = async (req, res) => {
         };
       }
       acc[productName].quantity += purchase.quantity;
-      acc[productName].total += purchase.quantity * purchase.price;
+      acc[productName].total += purchase.quantity * Number(purchase.price);
       return acc;
     }, {});
 
-    const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+    const total = purchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
     // Check payment status
     const payments = await prisma.payment.findMany({

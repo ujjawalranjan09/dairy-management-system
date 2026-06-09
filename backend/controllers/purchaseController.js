@@ -95,7 +95,7 @@ const getTodayPurchases = async (req, res) => {
         };
       }
       acc[customerId].purchases.push(purchase);
-      acc[customerId].total += purchase.quantity * purchase.price;
+      acc[customerId].total += purchase.quantity * Number(purchase.price);
       return acc;
     }, {});
 
@@ -141,7 +141,7 @@ const getPurchasesByCustomer = async (req, res) => {
       orderBy: { date: 'desc' }
     });
 
-    const total = purchases.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+    const total = purchases.reduce((sum, p) => sum + (p.quantity * Number(p.price)), 0);
 
     res.json({ purchases, total });
   } catch (error) {

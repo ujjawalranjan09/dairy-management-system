@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { customerAPI, productAPI, purchaseAPI } from '../services/api'
+import { customerAPI, productAPI, purchaseAPI, paymentAPI } from '../services/api'
 import { 
   Plus, 
   Minus,

@@ -70,11 +70,21 @@ const getPendingPayments = async (req, res) => {
       return res.json({ payments });
     }
 
+    let where = {
+      userId: req.ownerId,
+      status: 'PENDING'
+    };
+
+    // EMPLOYEE: scope to their own recorded payments or assigned customers
+    if (req.userRole === ROLES.EMPLOYEE) {
+      where.OR = [
+        { creatorId: req.user.id },
+        { customer: { assignedEmployeeId: req.user.id } }
+      ];
+    }
+
     const payments = await prisma.payment.findMany({
-      where: {
-        userId: req.ownerId,
-        status: 'PENDING'
-      },
+      where,
       include: {
         customer: true
       },
