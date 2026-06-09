@@ -44,7 +44,7 @@ const register = async (req, res) => {
       });
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { phone }
     });
 
@@ -88,7 +88,7 @@ const login = async (req, res) => {
     }
 
     // Find user by phone
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { phone }
     });
 
