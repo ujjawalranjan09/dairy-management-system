@@ -31,7 +31,7 @@ const getAllCustomers = async (req, res) => {
     res.json({ customers });
   } catch (error) {
     console.error('Get customers error:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message, code: error.code });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
