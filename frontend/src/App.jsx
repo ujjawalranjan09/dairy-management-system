@@ -9,6 +9,9 @@ import DailyEntry from './pages/DailyEntry'
 import Billing from './pages/Billing'
 import Payments from './pages/Payments'
 import Users from './pages/Users'
+import Stock from './pages/Stock'
+import Outstanding from './pages/Outstanding'
+import WhatsApp from './pages/WhatsApp'
 import Layout from './components/Layout'
 import { authAPI } from './services/api'
 
@@ -94,6 +97,18 @@ function App() {
               <Route 
                 path="/users" 
                 element={user.role === ROLES.ADMIN ? <Users user={user} /> : <Navigate to="/dashboard" replace />} 
+              />
+              <Route 
+                path="/stock" 
+                element={user.role === ROLES.CUSTOMER ? <Navigate to="/dashboard" replace /> : <Stock user={user} />} 
+              />
+              <Route 
+                path="/outstanding" 
+                element={user.role === ROLES.CUSTOMER ? <Navigate to="/dashboard" replace /> : <Outstanding user={user} />} 
+              />
+              <Route 
+                path="/whatsapp" 
+                element={user.role !== ROLES.ADMIN ? <Navigate to="/dashboard" replace /> : <WhatsApp user={user} />} 
               />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

@@ -40,6 +40,10 @@ model User {
   // Customers assigned to this employee
   assignedCustomers Customer[] @relation("AssignedEmployee")
 
+  // New relations
+  stockEntries  Stock[]
+  advancePayments AdvancePayment[]
+
   @@index([ownerId])
   @@index([customerId])
   @@map("users")
@@ -73,6 +77,9 @@ model Customer {
   creatorId   Int?     @map("creator_id")
   creator     User?    @relation("CreatorCustomers", fields: [creatorId], references: [id], onDelete: SetNull)
 
+  // New relations
+  advancePayments AdvancePayment[]
+
   @@index([userId])
   @@index([creatorId])
   @@index([assignedEmployeeId])
@@ -93,6 +100,9 @@ model Product {
 
   // Customers who have this as default product
   defaultForCustomers CustomerDefaultProduct[]
+
+  // New relations
+  stockEntries Stock[]
 
   @@index([userId])
   @@map("products")
@@ -165,4 +175,47 @@ model CustomerDefaultProduct {
   @@index([customerId])
   @@index([productId])
   @@map("customer_default_products")
+}
+
+// NEW: Stock/Inventory tracking
+model Stock {
+  id           Int      @id @default(autoincrement())
+  date         DateTime
+  productId    Int      @map("product_id")
+  openingQty   Float    @default(0) @map("opening_qty")
+  receivedQty  Float    @default(0) @map("received_qty")
+  soldQty      Float    @default(0) @map("sold_qty")
+  wastedQty    Float    @default(0) @map("wasted_qty")
+  closingQty   Float    @default(0) @map("closing_qty")
+  userId       Int      @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([date, productId, userId])
+  @@index([date])
+  @@index([productId])
+  @@index([userId])
+  @@map("stock")
+}
+
+// NEW: Advance payments
+model AdvancePayment {
+  id          Int      @id @default(autoincrement())
+  customerId  Int      @map("customer_id")
+  amount      Decimal
+  remaining   Decimal
+  date        DateTime
+  method      String   @default("CASH")
+  note        String?  @default("")
+  userId      Int      @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([userId])
+  @@map("advance_payments")
 }

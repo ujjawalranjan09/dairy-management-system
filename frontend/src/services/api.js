@@ -43,6 +43,8 @@ export const authAPI = {
   // ADMIN only - ERP user management (Employees + Customer portal accounts)
   getUsers: () => api.get('/auth/users'),
   createUser: (userData) => api.post('/auth/users', userData),
+  updateUser: (id, userData) => api.put(`/auth/users/${id}`, userData),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
 }
 
 // Customer endpoints
@@ -91,6 +93,32 @@ export const paymentAPI = {
 // Dashboard endpoints
 export const dashboardAPI = {
   getStats: (params) => api.get('/dashboard/stats', { params }),
+}
+
+// Stock/Inventory endpoints
+export const stockAPI = {
+  get: (params) => api.get('/stock', { params }),
+  save: (data) => api.post('/stock', data),
+  getSummary: (params) => api.get('/stock/summary', { params }),
+}
+
+// Advance payment endpoints
+export const advanceAPI = {
+  getAll: (params) => api.get('/advances', { params }),
+  create: (data) => api.post('/advances', data),
+  use: (data) => api.post('/advances/use', data),
+}
+
+// Aging/Outstanding report endpoints
+export const agingAPI = {
+  getReport: () => api.get('/aging'),
+}
+
+// WhatsApp endpoints
+export const whatsappAPI = {
+  sendDailySummary: () => api.post('/whatsapp/daily-summary'),
+  sendMonthlyBill: (data) => api.post('/whatsapp/monthly-bill', data),
+  sendReminders: () => api.post('/whatsapp/reminders'),
 }
 
 export default api

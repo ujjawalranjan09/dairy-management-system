@@ -27,8 +27,11 @@ const adminNav = [
   { name: 'Customers', href: '/customers', icon: Users, emoji: '👥' },
   { name: 'Products', href: '/products', icon: Package, emoji: '📦' },
   { name: 'Add Entry', href: '/daily-entry', icon: ShoppingCart, emoji: '📝' },
+  { name: 'Stock', href: '/stock', icon: Package, emoji: '📊' },
   { name: 'Bills', href: '/billing', icon: FileText, emoji: '🧾' },
   { name: 'Payments', href: '/payments', icon: CreditCard, emoji: '💰' },
+  { name: 'Outstanding', href: '/outstanding', icon: FileText, emoji: '📋' },
+  { name: 'WhatsApp', href: '/whatsapp', icon: Settings, emoji: '📱' },
   { name: 'Team', href: '/users', icon: Settings, emoji: '👨‍👩‍👧' },
 ]
 
@@ -36,8 +39,10 @@ const employeeNav = [
   { name: 'Home', href: '/dashboard', icon: Home, emoji: '🏠' },
   { name: 'Customers', href: '/customers', icon: Users, emoji: '👥' },
   { name: 'Add Entry', href: '/daily-entry', icon: ShoppingCart, emoji: '📝' },
+  { name: 'Stock', href: '/stock', icon: Package, emoji: '📊' },
   { name: 'Bills', href: '/billing', icon: FileText, emoji: '🧾' },
   { name: 'Payments', href: '/payments', icon: CreditCard, emoji: '💰' },
+  { name: 'Outstanding', href: '/outstanding', icon: FileText, emoji: '📋' },
 ]
 
 const customerNav = [

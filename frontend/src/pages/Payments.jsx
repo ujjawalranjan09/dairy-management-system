@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { paymentAPI, customerAPI, billingAPI } from '../services/api'
+import { paymentAPI, customerAPI, billingAPI, advanceAPI } from '../services/api'
 import {
   CreditCard, Search, Plus, CheckCircle, XCircle, Wallet, TrendingUp, Clock, X
 } from 'lucide-react'
@@ -24,6 +24,12 @@ export default function Payments({ user }) {
   const [modalYear, setModalYear] = useState(new Date().getFullYear())
   const [modalAmount, setModalAmount] = useState('')
   const [modalMethod, setModalMethod] = useState('CASH')
+  const [advanceBalances, setAdvanceBalances] = useState([])
+  const [showAdvanceModal, setShowAdvanceModal] = useState(false)
+  const [advanceCustomerId, setAdvanceCustomerId] = useState('')
+  const [advanceAmount, setAdvanceAmount] = useState('')
+  const [advanceMethod, setAdvanceMethod] = useState('CASH')
+  const [advanceNote, setAdvanceNote] = useState('')
 
   const resetModal = () => {
     setModalCustomerId('')
@@ -32,6 +38,44 @@ export default function Payments({ user }) {
     setModalAmount('')
     setModalMethod('CASH')
   }
+
+  const resetAdvanceModal = () => {
+    setAdvanceCustomerId('')
+    setAdvanceAmount('')
+    setAdvanceMethod('CASH')
+    setAdvanceNote('')
+  }
+
+  const handleRecordAdvance = async (e) => {
+    e.preventDefault()
+    try {
+      setLoading(true)
+      await advanceAPI.create({
+        customerId: parseInt(advanceCustomerId),
+        amount: parseFloat(advanceAmount),
+        method: advanceMethod,
+        note: advanceNote
+      })
+      setSuccess('✅ Advance payment recorded!')
+      setShowAdvanceModal(false)
+      resetAdvanceModal()
+      fetchAdvances()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not record advance')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchAdvances = async () => {
+    try {
+      const res = await advanceAPI.getAll()
+      setAdvanceBalances(res.data.balances || [])
+    } catch (err) { console.error(err) }
+  }
+
+  useEffect(() => { if (!isCustomer) fetchAdvances() }, [])
 
   const handleRecordPayment = async (e) => {
     e.preventDefault()
@@ -164,10 +208,16 @@ export default function Payments({ user }) {
           <p className="page-subtitle">{isCustomer ? 'Your payment history' : 'Track customer payments'}</p>
         </div>
         {!isCustomer && (
-          <button onClick={() => setIsModalOpen(true)} className="btn-primary h-12 flex-shrink-0 active:scale-95">
-            <Plus className="w-4 h-4 mr-1.5" />
-            Record Payment
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setIsModalOpen(true)} className="btn-primary h-12 flex-shrink-0 active:scale-95">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Record Payment
+            </button>
+            <button onClick={() => setShowAdvanceModal(true)} className="btn-success h-12 flex-shrink-0 active:scale-95">
+              <Plus className="w-4 h-4 mr-1.5" />
+              💰 Advance
+            </button>
+          </div>
         )}
       </div>
 
@@ -306,6 +356,32 @@ export default function Payments({ user }) {
         </div>
       )}
 
+      {/* Advance Balances */}
+      {!isCustomer && advanceBalances.length > 0 && (
+        <div className="card p-4 md:p-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">💰 Customer Advance Balances</h2>
+          <div className="space-y-2">
+            {advanceBalances.map((b, i) => (
+              <div key={i} className="list-item animate-slide-up" style={{ animationDelay: `${i * 20}ms` }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-100 text-brand-700 rounded-xl flex items-center justify-center font-bold text-sm">
+                    {b.customer.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{b.customer.name}</p>
+                    <p className="text-xs text-gray-400">📱 {b.customer.phoneNumber}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-brand-600 text-base">₹{Math.round(b.totalRemaining)}</p>
+                  <p className="text-[10px] text-gray-400 font-semibold">ADVANCE</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Record Payment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -364,6 +440,46 @@ export default function Payments({ user }) {
               <div className="flex gap-3 pt-3">
                 <button type="button" onClick={() => { setIsModalOpen(false); resetModal() }} className="btn-secondary flex-1 h-12 active:scale-95">Cancel</button>
                 <button type="submit" className="btn-primary flex-1 h-12 active:scale-95">✅ Record</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Record Advance Modal */}
+      {showAdvanceModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => { setShowAdvanceModal(false); resetAdvanceModal() }}></div>
+          <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl p-5 animate-slide-up max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">💰 Record Advance</h2>
+              <button onClick={() => { setShowAdvanceModal(false); resetAdvanceModal() }} className="p-2 text-gray-400 active:text-gray-600 active:bg-gray-100 rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleRecordAdvance} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">👤 Customer</label>
+                <SearchableCustomerSelect customers={displayCustomers} value={advanceCustomerId} onChange={setAdvanceCustomerId} placeholder="Search customer..." required={true} />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">💰 Amount (₹)</label>
+                <input type="number" inputMode="decimal" value={advanceAmount} onChange={(e) => setAdvanceAmount(e.target.value)} placeholder="Enter amount" className="input text-base min-h-[52px]" min="1" required />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">💳 Method</label>
+                <select value={advanceMethod} onChange={(e) => setAdvanceMethod(e.target.value)} className="select text-base py-3 min-h-[52px]">
+                  <option value="CASH">💵 Cash</option>
+                  <option value="ONLINE">📱 Online</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📝 Note (optional)</label>
+                <input type="text" value={advanceNote} onChange={(e) => setAdvanceNote(e.target.value)} placeholder="e.g. Advance for June" className="input text-base min-h-[52px]" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button type="button" onClick={() => { setShowAdvanceModal(false); resetAdvanceModal() }} className="btn-secondary flex-1 h-12">Cancel</button>
+                <button type="submit" className="btn-success flex-1 h-12">💰 Record Advance</button>
               </div>
             </form>
           </div>

@@ -24,6 +24,10 @@ const purchaseRoutes = require('./routes/purchases');
 const billingRoutes = require('./routes/billing');
 const paymentRoutes = require('./routes/payments');
 const dashboardRoutes = require('./routes/dashboard');
+const stockRoutes = require('./routes/stock');
+const advanceRoutes = require('./routes/advances');
+const agingRoutes = require('./routes/aging');
+const whatsappRoutes = require('./routes/whatsapp');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -33,6 +37,10 @@ app.use('/api/purchases', purchaseRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/stock', stockRoutes);
+app.use('/api/advances', advanceRoutes);
+app.use('/api/aging', agingRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
