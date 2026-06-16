@@ -1,9 +1,6 @@
 databases:
-  # Free PostgreSQL database on Render
   - name: dairy-db
     plan: free
-    databaseName: dairy
-    user: dairy
 
 services:
   # Backend Web Service
