@@ -55,9 +55,7 @@ model Customer {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Default product settings for this customer
-  defaultProductId Int?    @map("default_product_id")
-  defaultQuantity  Float?  @map("default_quantity")
-  defaultUnit      String? @map("default_unit")
+  defaultProducts CustomerDefaultProduct[]
 
   // Assigned employee (for routing purposes - but others can still enter)
   assignedEmployeeId Int? @map("assigned_employee_id")
@@ -65,9 +63,6 @@ model Customer {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   purchases Purchase[]
   payments  Payment[]
-
-  // Default product relation
-  defaultProduct Product? @relation("CustomerDefaultProduct", fields: [defaultProductId], references: [id], onDelete: SetNull)
 
   // Assigned employee relation
   assignedEmployee User? @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
@@ -80,7 +75,6 @@ model Customer {
 
   @@index([userId])
   @@index([creatorId])
-  @@index([defaultProductId])
   @@index([assignedEmployeeId])
   @@map("customers")
 }
@@ -98,7 +92,7 @@ model Product {
   purchases Purchase[]
 
   // Customers who have this as default product
-  defaultForCustomers Customer[] @relation("CustomerDefaultProduct")
+  defaultForCustomers CustomerDefaultProduct[]
 
   @@index([userId])
   @@map("products")
@@ -113,6 +107,7 @@ model Purchase {
   date       DateTime
   userId     Int      @map("user_id")
   createdAt  DateTime @default(now()) @map("created_at")
+  shift      String   @default("MORNING")
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -154,4 +149,20 @@ model Payment {
   @@index([userId])
   @@index([creatorId])
   @@map("payments")
+}
+
+model CustomerDefaultProduct {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  productId  Int      @map("product_id")
+  quantity   Float
+  unit       String
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@index([productId])
+  @@map("customer_default_products")
 }
