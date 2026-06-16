@@ -10,7 +10,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm install && node node_modules/prisma/build/index.js generate
-    startCommand: node node_modules/prisma/build/index.js db push --accept-data-loss && npm start
+    startCommand: node node_modules/prisma/build/index.js migrate deploy && node server.js
     envVars:
       - key: PORT
         value: 5000
