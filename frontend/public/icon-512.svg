@@ -1,0 +1,22 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <defs>
+    <linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' style='stop-color:#14b8a6'/>
+      <stop offset='100%' style='stop-color:#0d9488'/>
+    </linearGradient>
+    <linearGradient id='glass' x1='0%' y1='0%' x2='0%' y2='100%'>
+      <stop offset='0%' style='stop-color:#ffffff'/>
+      <stop offset='100%' style='stop-color:#e0f2f1'/>
+    </linearGradient>
+  </defs>
+  <rect width='512' height='512' rx='102.4' fill='url(#bg)'/>
+  <!-- Milk glass -->
+  <g transform='translate(128, 76.8)'>
+    <path d='M61.44 51.2 L76.8 281.6 Q76.8 307.2 102.4 307.2 L153.6 307.2 Q179.2 307.2 179.2 281.6 L194.56 51.2 Z' fill='url(#glass)' stroke='white' stroke-width='5.12'/>
+    <!-- Milk surface -->
+    <ellipse cx='128' cy='51.2' rx='66.56' ry='15.36' fill='white' opacity='0.9'/>
+    <!-- Milk drops -->
+    <circle cx='102.4' cy='348.16' r='15.36' fill='white' opacity='0.8'/>
+    <circle cx='153.6' cy='368.64' r='10.24' fill='white' opacity='0.6'/>
+  </g>
+</svg>

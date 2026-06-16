@@ -1,0 +1,22 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'>
+  <defs>
+    <linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' style='stop-color:#14b8a6'/>
+      <stop offset='100%' style='stop-color:#0d9488'/>
+    </linearGradient>
+    <linearGradient id='glass' x1='0%' y1='0%' x2='0%' y2='100%'>
+      <stop offset='0%' style='stop-color:#ffffff'/>
+      <stop offset='100%' style='stop-color:#e0f2f1'/>
+    </linearGradient>
+  </defs>
+  <rect width='192' height='192' rx='38.400000000000006' fill='url(#bg)'/>
+  <!-- Milk glass -->
+  <g transform='translate(48, 28.799999999999997)'>
+    <path d='M23.04 19.200000000000003 L28.799999999999997 105.60000000000001 Q28.799999999999997 115.19999999999999 38.400000000000006 115.19999999999999 L57.599999999999994 115.19999999999999 Q67.19999999999999 115.19999999999999 67.19999999999999 105.60000000000001 L72.96000000000001 19.200000000000003 Z' fill='url(#glass)' stroke='white' stroke-width='1.92'/>
+    <!-- Milk surface -->
+    <ellipse cx='48' cy='19.200000000000003' rx='24.96' ry='5.76' fill='white' opacity='0.9'/>
+    <!-- Milk drops -->
+    <circle cx='38.400000000000006' cy='130.56' r='5.76' fill='white' opacity='0.8'/>
+    <circle cx='57.599999999999994' cy='138.24' r='3.84' fill='white' opacity='0.6'/>
+  </g>
+</svg>

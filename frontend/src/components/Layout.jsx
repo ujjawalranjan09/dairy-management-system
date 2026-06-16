@@ -14,6 +14,8 @@ import {
   ChevronLeft
 } from 'lucide-react'
 
+import InstallPrompt from './InstallPrompt'
+
 const ROLES = {
   ADMIN: 'ADMIN',
   EMPLOYEE: 'EMPLOYEE',
@@ -300,6 +302,9 @@ export default function Layout({ children, onLogout, user, role }) {
           </div>
         </div>
       </div>
+
+      {/* Install App Prompt */}
+      <InstallPrompt />
     </>
   )
 }
