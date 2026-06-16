@@ -5,9 +5,8 @@ services:
     env: node
     plan: free
     rootDir: backend
-    buildCommand: npm install && npx prisma generate
-    # SQLite: push schema then start server
-    startCommand: npx prisma db push && npm start
+    buildCommand: npm install && node node_modules/prisma/build/index.js generate
+    startCommand: node node_modules/prisma/build/index.js db push && npm start
     envVars:
       - key: PORT
         value: 5000
