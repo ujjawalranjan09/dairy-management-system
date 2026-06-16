@@ -1,10 +1,14 @@
 const prisma = require('../src/db');
 const { ROLES } = require('../middleware/auth');
 
-// Reusable include for customer with default product and assigned employee
+// Reusable include for customer with default products and assigned employee
 const customerInclude = {
-  defaultProduct: {
-    select: { id: true, productName: true, price: true, unit: true }
+  defaultProducts: {
+    include: {
+      product: {
+        select: { id: true, productName: true, price: true, unit: true }
+      }
+    }
   },
   assignedEmployee: {
     select: { id: true, name: true, phone: true }
@@ -27,7 +31,7 @@ const getAllCustomers = async (req, res) => {
     res.json({ customers });
   } catch (error) {
     console.error('Get customers error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message, code: error.code });
   }
 };
 
@@ -108,7 +112,7 @@ const createCustomer = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { name, phoneNumber, address, defaultProductId, defaultQuantity, defaultUnit, assignedEmployeeId } = req.body;
+    const { name, phoneNumber, address, defaultProducts, assignedEmployeeId } = req.body;
 
     if (!name || !phoneNumber) {
       return res.status(400).json({ error: 'Name and phone number are required' });
@@ -123,16 +127,15 @@ const createCustomer = async (req, res) => {
       creatorId: req.user.id
     };
 
-    // Optional: default product assignment
-    if (defaultProductId) {
-      const product = await prisma.product.findFirst({
-        where: { id: parseInt(defaultProductId), userId: req.ownerId }
-      });
-      if (product) {
-        data.defaultProductId = parseInt(defaultProductId);
-        data.defaultQuantity = defaultQuantity ? parseFloat(defaultQuantity) : 1;
-        data.defaultUnit = defaultUnit || product.unit;
-      }
+    // Optional: default products assignment
+    if (defaultProducts && Array.isArray(defaultProducts)) {
+      data.defaultProducts = {
+        create: defaultProducts.map(dp => ({
+          productId: parseInt(dp.productId),
+          quantity: parseFloat(dp.quantity) || 1,
+          unit: dp.unit || ''
+        }))
+      };
     }
 
     // Optional: assigned employee
@@ -171,7 +174,7 @@ const updateCustomer = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, phoneNumber, address, defaultProductId, defaultQuantity, defaultUnit, assignedEmployeeId } = req.body;
+    const { name, phoneNumber, address, defaultProducts, assignedEmployeeId } = req.body;
 
     if (!name || !phoneNumber) {
       return res.status(400).json({ error: 'Name and phone number are required' });
@@ -191,27 +194,16 @@ const updateCustomer = async (req, res) => {
     // Build update data
     const data = { name, phoneNumber, address };
 
-    // Handle default product - allow clearing (null) or updating
-    if (defaultProductId !== undefined) {
-      if (defaultProductId === null || defaultProductId === '') {
-        data.defaultProductId = null;
-        data.defaultQuantity = null;
-        data.defaultUnit = null;
-      } else {
-        const product = await prisma.product.findFirst({
-          where: { id: parseInt(defaultProductId), userId: req.ownerId }
-        });
-        if (product) {
-          data.defaultProductId = parseInt(defaultProductId);
-          data.defaultQuantity = defaultQuantity ? parseFloat(defaultQuantity) : (existingCustomer.defaultQuantity || 1);
-          data.defaultUnit = defaultUnit || product.unit;
-        }
-      }
-    } else if (defaultQuantity !== undefined) {
-      data.defaultQuantity = parseFloat(defaultQuantity);
-    }
-    if (defaultUnit !== undefined && defaultProductId === undefined) {
-      data.defaultUnit = defaultUnit;
+    // Handle multiple default products
+    if (defaultProducts !== undefined && Array.isArray(defaultProducts)) {
+      data.defaultProducts = {
+        deleteMany: {},
+        create: defaultProducts.map(dp => ({
+          productId: parseInt(dp.productId),
+          quantity: parseFloat(dp.quantity) || 1,
+          unit: dp.unit || ''
+        }))
+      };
     }
 
     // Handle assigned employee - allow clearing or updating
