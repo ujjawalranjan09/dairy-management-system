@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react'
 import { paymentAPI, customerAPI, billingAPI } from '../services/api'
-import { 
-  CreditCard,
-  Calendar,
-  Search,
-  Plus,
-  CheckCircle,
-  XCircle
+import {
+  CreditCard, Search, Plus, CheckCircle, XCircle, Wallet, TrendingUp, Clock, X
 } from 'lucide-react'
 import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
 
@@ -17,14 +12,12 @@ export default function Payments({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
-  // Filters
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedCustomer, setSelectedCustomer] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-
-  // Record Payment Modal State
+  const [showOnlyAssigned, setShowOnlyAssigned] = useState(user?.role === 'EMPLOYEE')
+  const [modalShowOnlyAssigned, setModalShowOnlyAssigned] = useState(user?.role === 'EMPLOYEE')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalCustomerId, setModalCustomerId] = useState('')
   const [modalMonth, setModalMonth] = useState(new Date().getMonth() + 1)
@@ -51,46 +44,32 @@ export default function Payments({ user }) {
         year: parseInt(modalYear),
         method: modalMethod
       })
-      setSuccess(response.data.message || 'Payment recorded successfully!')
+      setSuccess('✅ Payment recorded!')
       setIsModalOpen(false)
       resetModal()
       fetchPayments()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to record payment')
-      console.error(err)
+      setError(err.response?.data?.error || 'Could not record payment')
     } finally {
       setLoading(false)
     }
   }
 
-  // Auto-fetch bill total to pre-fill amount
   useEffect(() => {
     const fetchBillTotal = async () => {
       if (modalCustomerId && modalMonth && modalYear) {
         try {
-          const response = await billingAPI.getCustomer(modalCustomerId, {
-            month: modalMonth,
-            year: modalYear
-          })
-          if (response.data && response.data.total !== undefined) {
-            setModalAmount(response.data.total.toString())
-          }
-        } catch (err) {
-          console.error('Failed to fetch bill total:', err)
-        }
+          const response = await billingAPI.getCustomer(modalCustomerId, { month: modalMonth, year: modalYear })
+          if (response.data?.total !== undefined) setModalAmount(response.data.total.toString())
+        } catch (err) { console.error(err) }
       }
     }
     fetchBillTotal()
   }, [modalCustomerId, modalMonth, modalYear])
 
-  useEffect(() => {
-    fetchInitialData()
-  }, [])
-
-  useEffect(() => {
-    fetchPayments()
-  }, [selectedMonth, selectedYear, selectedCustomer, statusFilter])
+  useEffect(() => { fetchInitialData() }, [])
+  useEffect(() => { fetchPayments() }, [selectedMonth, selectedYear, selectedCustomer, statusFilter])
 
   const fetchInitialData = async () => {
     try {
@@ -98,12 +77,9 @@ export default function Payments({ user }) {
       if (!isCustomer) {
         const customersResponse = await customerAPI.getAll()
         setCustomers(customersResponse.data.customers)
-      } else {
-        setCustomers([])
       }
     } catch (err) {
-      setError('Failed to load customers')
-      console.error(err)
+      setError('Could not load customers')
     } finally {
       setLoading(false)
     }
@@ -113,21 +89,14 @@ export default function Payments({ user }) {
     try {
       setLoading(true)
       setError('')
-      
       const params = { month: selectedMonth, year: selectedYear }
       if (statusFilter) params.status = statusFilter
-      
       const response = await paymentAPI.getAll(params)
       let filteredPayments = response.data.payments
-
-      if (selectedCustomer) {
-        filteredPayments = filteredPayments.filter(p => p.customerId === parseInt(selectedCustomer))
-      }
-
+      if (selectedCustomer) filteredPayments = filteredPayments.filter(p => p.customerId === parseInt(selectedCustomer))
       setPayments(filteredPayments)
     } catch (err) {
-      setError('Failed to load payments')
-      console.error(err)
+      setError('Could not load payments')
     } finally {
       setLoading(false)
     }
@@ -137,14 +106,11 @@ export default function Payments({ user }) {
     try {
       setLoading(true)
       const response = await paymentAPI.markAsPaid(paymentId)
-      setPayments(payments.map(p => 
-        p.id === paymentId ? { ...p, status: 'PAID', paymentDate: response.data.payment.paymentDate } : p
-      ))
-      setSuccess('Payment marked as paid successfully!')
+      setPayments(payments.map(p => p.id === paymentId ? { ...p, status: 'PAID', paymentDate: response.data.payment.paymentDate } : p))
+      setSuccess('✅ Payment marked as paid!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError('Failed to mark payment as paid')
-      console.error(err)
+      setError('Could not mark payment')
     } finally {
       setLoading(false)
     }
@@ -154,14 +120,11 @@ export default function Payments({ user }) {
     try {
       setLoading(true)
       await paymentAPI.markAsFailed(paymentId)
-      setPayments(payments.map(p => 
-        p.id === paymentId ? { ...p, status: 'FAILED', paymentDate: null } : p
-      ))
-      setSuccess('Payment marked as failed successfully!')
+      setPayments(payments.map(p => p.id === paymentId ? { ...p, status: 'FAILED', paymentDate: null } : p))
+      setSuccess('✅ Payment marked as failed')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError('Failed to mark payment as failed')
-      console.error(err)
+      setError('Could not update payment')
     } finally {
       setLoading(false)
     }
@@ -174,123 +137,84 @@ export default function Payments({ user }) {
     return { totalAmount, paidAmount, pendingAmount }
   }
 
-  const getPaymentStatusColor = (status) => {
+  const getPaymentStatusEmoji = (status) => {
     switch (status) {
-      case 'PAID': return 'bg-green-100 text-green-800'
-      case 'PARTIALLY PAID': return 'bg-blue-100 text-blue-800'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800'
-      case 'FAILED': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'PAID': return '✅'
+      case 'PENDING': return '⏳'
+      case 'FAILED': return '❌'
+      default: return '❓'
     }
   }
 
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i)
 
+  const displayCustomers = user?.role === 'EMPLOYEE' && showOnlyAssigned
+    ? customers.filter(c => c.assignedEmployeeId === user.id)
+    : customers
+  const modalDisplayCustomers = user?.role === 'EMPLOYEE' && modalShowOnlyAssigned
+    ? customers.filter(c => c.assignedEmployeeId === user.id)
+    : customers
+
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{isCustomer ? 'My Payments' : 'Payments'}</h1>
-          <p className="text-gray-600">{isCustomer ? 'Your payment history and status' : 'Manage customer payments and track payment status'}</p>
+          <h1 className="page-title">{isCustomer ? '💰 My Payments' : '💰 Payments'}</h1>
+          <p className="page-subtitle">{isCustomer ? 'Your payment history' : 'Track customer payments'}</p>
         </div>
         {!isCustomer && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="mt-4 md:mt-0 flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            <Plus className="w-5 h-5 mr-2" />
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary h-12 flex-shrink-0 active:scale-95">
+            <Plus className="w-4 h-4 mr-1.5" />
             Record Payment
           </button>
         )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
-          {success}
-        </div>
-      )}
+      {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-sm font-medium">⚠️ {error}</div>}
+      {success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-2xl text-sm font-medium">{success}</div>}
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <div className={`grid grid-cols-1 gap-4 ${isCustomer ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
+      <div className="card p-4 md:p-6">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-2">
-              Month
-            </label>
-            <select
-              id="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {months.map((month, index) => (
-                <option key={index} value={index + 1}>{month}</option>
-              ))}
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">📅 Month</label>
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="select text-base py-3 min-h-[52px]">
+              {months.map((month, index) => <option key={index} value={index + 1}>{month}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
-              Year
-            </label>
-            <select
-              id="year"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Year</label>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="select text-base py-3 min-h-[52px]">
+              {years.map(year => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
           {!isCustomer && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Customer
-              </label>
-              <SearchableCustomerSelect
-                customers={customers}
-                value={selectedCustomer}
-                onChange={setSelectedCustomer}
-                placeholder="Search customer..."
-                showAllOption={true}
-                allOptionLabel="All Customers"
-              />
+            <div className="col-span-2">
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">👤 Customer</label>
+                {user?.role === 'EMPLOYEE' && (
+                  <label className="inline-flex items-center text-xs text-brand-600 font-bold cursor-pointer">
+                    <input type="checkbox" checked={showOnlyAssigned} onChange={(e) => setShowOnlyAssigned(e.target.checked)} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 mr-1 h-4 w-4" />
+                    Mine
+                  </label>
+                )}
+              </div>
+              <SearchableCustomerSelect customers={displayCustomers} value={selectedCustomer} onChange={setSelectedCustomer} placeholder="All Customers" showAllOption={true} allOptionLabel="All Customers" />
             </div>
           )}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              id="status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="PAID">Paid</option>
-              <option value="FAILED">Failed</option>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Status</label>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select text-base py-3 min-h-[52px]">
+              <option value="">All</option>
+              <option value="PENDING">⏳ Pending</option>
+              <option value="PAID">✅ Paid</option>
+              <option value="FAILED">❌ Failed</option>
             </select>
           </div>
           <div className="flex items-end">
-            <button
-              onClick={fetchPayments}
-              className="w-full flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <Search className="w-5 h-5 mr-2" />
+            <button onClick={fetchPayments} className="btn-primary w-full h-12 active:scale-95">
+              <Search className="w-4 h-4 mr-1.5" />
               Filter
             </button>
           </div>
@@ -299,236 +223,147 @@ export default function Payments({ user }) {
 
       {/* Summary */}
       {!loading && payments.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-900">₹{calculateTotals().totalAmount}</div>
-              <div className="text-sm text-blue-600">Total Amount</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-900">₹{calculateTotals().paidAmount}</div>
-              <div className="text-sm text-green-600">Paid Amount</div>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-900">₹{calculateTotals().pendingAmount}</div>
-              <div className="text-sm text-yellow-600">Pending Amount</div>
-            </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-3 text-center">
+            <div className="text-lg mb-1">💰</div>
+            <p className="text-base font-extrabold text-gray-900">₹{calculateTotals().totalAmount}</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Total</p>
+          </div>
+          <div className="card p-3 text-center">
+            <div className="text-lg mb-1">✅</div>
+            <p className="text-base font-extrabold text-emerald-600">₹{calculateTotals().paidAmount}</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Paid</p>
+          </div>
+          <div className="card p-3 text-center">
+            <div className="text-lg mb-1">⏳</div>
+            <p className="text-base font-extrabold text-amber-600">₹{calculateTotals().pendingAmount}</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Pending</p>
           </div>
         </div>
       )}
 
-      {/* Payments List */}
-      <div className="bg-white rounded-lg shadow">
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="text-center py-12">
-            <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No payments found for the selected criteria</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
+      {/* Payment List */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48">
+          <div className="text-4xl animate-bounce">🥛</div>
+        </div>
+      ) : payments.length === 0 ? (
+        <div className="card p-8 text-center">
+          <div className="text-5xl mb-3">💰</div>
+          <p className="text-gray-500 font-medium text-sm">No payments found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {payments.map((payment, i) => (
+            <div key={payment.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 20}ms` }}>
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg ${
+                  payment.status === 'PAID' ? 'bg-emerald-50' :
+                  payment.status === 'FAILED' ? 'bg-rose-50' :
+                  'bg-amber-50'
+                }`}>
+                  {getPaymentStatusEmoji(payment.status)}
+                </div>
+                <div className="flex-1 min-w-0">
                   {!isCustomer && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
+                    <p className="font-semibold text-gray-900 text-base truncate">{payment.customer.name}</p>
                   )}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Month/Year
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Method
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Date
-                  </th>
-                  {!isCustomer && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
-                    {!isCustomer && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                            <CreditCard className="w-5 h-5 text-indigo-600" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{payment.customer.name}</div>
-                            <div className="text-sm text-gray-500">{payment.customer.phoneNumber}</div>
-                          </div>
-                        </div>
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ₹{payment.amount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {months[payment.month - 1]} {payment.year}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(payment.status)}`}>
-                        {payment.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                        payment.method === 'ONLINE' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {payment.method || 'CASH'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-IN') : 'Not paid'}
-                    </td>
-                    {!isCustomer && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {payment.status === 'PENDING' && (
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => markAsPaid(payment.id)}
-                              className="text-green-600 hover:text-green-900 flex items-center"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Mark as Paid
-                            </button>
-                            <button
-                              onClick={() => markAsFailed(payment.id)}
-                              className="text-red-600 hover:text-red-900 flex items-center"
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Mark as Failed
-                            </button>
-                          </div>
-                        )}
-                        {payment.status === 'PAID' && (
-                          <span className="text-green-600 flex items-center">
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Paid
-                          </span>
-                        )}
-                        {payment.status === 'FAILED' && (
-                          <span className="text-red-600 flex items-center">
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Failed
-                          </span>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-400 font-medium">{months[payment.month - 1]} {payment.year}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      payment.method === 'ONLINE' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {payment.method === 'ONLINE' ? '📱 Online' : '💵 Cash'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-gray-900 text-base">₹{payment.amount}</p>
+                  <span className={`text-[10px] font-bold ${
+                    payment.status === 'PAID' ? 'text-emerald-600' :
+                    payment.status === 'FAILED' ? 'text-rose-600' :
+                    'text-amber-600'
+                  }`}>
+                    {getPaymentStatusEmoji(payment.status)} {payment.status}
+                  </span>
+                </div>
+              </div>
+
+              {!isCustomer && payment.status === 'PENDING' && (
+                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <button onClick={() => markAsPaid(payment.id)} className="btn-success flex-1 h-12 text-sm active:scale-95">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    ✅ Mark Paid
+                  </button>
+                  <button onClick={() => markAsFailed(payment.id)} className="btn-danger flex-1 h-12 text-sm active:scale-95">
+                    <XCircle className="w-4 h-4 mr-1" />
+                    ❌ Failed
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Record Payment Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600/50">
-          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 font-semibold">Record Payment</h2>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); resetModal() }}></div>
+          <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl p-5 animate-slide-up max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">💰 Record Payment</h2>
+              <button onClick={() => { setIsModalOpen(false); resetModal() }} className="p-2 text-gray-400 active:text-gray-600 active:bg-gray-100 rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                <SearchableCustomerSelect
-                  customers={customers}
-                  value={modalCustomerId}
-                  onChange={setModalCustomerId}
-                  placeholder="Select Customer..."
-                  required={true}
-                />
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-sm font-semibold text-gray-700">👤 Customer</label>
+                  {user?.role === 'EMPLOYEE' && (
+                    <label className="inline-flex items-center text-xs text-brand-600 font-bold cursor-pointer">
+                      <input type="checkbox" checked={modalShowOnlyAssigned} onChange={(e) => setModalShowOnlyAssigned(e.target.checked)} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 mr-1 h-4 w-4" />
+                      My customers only
+                    </label>
+                  )}
+                </div>
+                <SearchableCustomerSelect customers={modalDisplayCustomers} value={modalCustomerId} onChange={setModalCustomerId} placeholder="Search customer..." required={true} />
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
-                  <select
-                    value={modalMonth}
-                    onChange={(e) => setModalMonth(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  >
-                    {months.map((m, index) => (
-                      <option key={index} value={index + 1}>{m}</option>
-                    ))}
+                  <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📅 Month</label>
+                  <select value={modalMonth} onChange={(e) => setModalMonth(parseInt(e.target.value))} className="select text-base py-3 min-h-[52px]" required>
+                    {months.map((m, index) => <option key={index} value={index + 1}>{m}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                  <select
-                    value={modalYear}
-                    onChange={(e) => setModalYear(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  >
-                    {years.map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
+                  <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Year</label>
+                  <select value={modalYear} onChange={(e) => setModalYear(parseInt(e.target.value))} className="select text-base py-3 min-h-[52px]" required>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                  <input
-                    type="number"
-                    value={modalAmount}
-                    onChange={(e) => setModalAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    min="1"
-                    required
-                  />
+                  <label className="text-sm font-semibold text-gray-700 mb-1.5 block">💰 Amount (₹)</label>
+                  <input type="number" inputMode="decimal" value={modalAmount} onChange={(e) => setModalAmount(e.target.value)} placeholder="Amount" className="input text-base min-h-[52px]" min="1" required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                  <select
-                    value={modalMethod}
-                    onChange={(e) => setModalMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  >
-                    <option value="CASH">Cash</option>
-                    <option value="ONLINE">Online</option>
+                  <label className="text-sm font-semibold text-gray-700 mb-1.5 block">💳 Method</label>
+                  <select value={modalMethod} onChange={(e) => setModalMethod(e.target.value)} className="select text-base py-3 min-h-[52px]" required>
+                    <option value="CASH">💵 Cash</option>
+                    <option value="ONLINE">📱 Online</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false)
-                    resetModal()
-                  }}
-                  className="px-4 py-2 border border-gray-350 text-gray-700 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  Record
-                </button>
+              <div className="flex gap-3 pt-3">
+                <button type="button" onClick={() => { setIsModalOpen(false); resetModal() }} className="btn-secondary flex-1 h-12 active:scale-95">Cancel</button>
+                <button type="submit" className="btn-primary flex-1 h-12 active:scale-95">✅ Record</button>
               </div>
             </form>
           </div>

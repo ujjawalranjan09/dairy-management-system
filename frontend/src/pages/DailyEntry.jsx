@@ -1,94 +1,49 @@
 import { useState, useEffect } from 'react'
 import { customerAPI, productAPI, purchaseAPI, paymentAPI } from '../services/api'
-import { 
-  Plus, 
-  Minus,
-  Calendar as CalendarIcon,
-  Save,
-  PlusCircle
-} from 'lucide-react'
+import { Plus, Minus, Save, PlusCircle, Trash2 } from 'lucide-react'
 import SearchableCustomerSelect from '../components/SearchableCustomerSelect'
+import SearchableProductSelect from '../components/SearchableProductSelect'
 
-// ─── Unit helpers ────────────────────────────────────────────────────────────
-
-// Returns allowed units for a product based on its base unit
 function getUnitOptions(baseUnit) {
   const base = (baseUnit || '').toLowerCase()
-  if (base === 'kg' || base === 'g') {
-    return [
-      { label: 'kg', value: 'kg' },
-      { label: 'g',  value: 'g'  },
-    ]
-  }
-  if (base === 'l' || base === 'ml' || base === 'liter' || base === 'litre') {
-    return [
-      { label: 'L',  value: 'L'  },
-      { label: 'ml', value: 'ml' },
-    ]
-  }
-  // fallback – just show the base unit
+  if (base === 'kg' || base === 'g') return [{ label: 'kg', value: 'kg' }, { label: 'g', value: 'g' }]
+  if (base === 'l' || base === 'ml' || base === 'liter' || base === 'litre') return [{ label: 'L', value: 'L' }, { label: 'ml', value: 'ml' }]
   return [{ label: baseUnit || 'unit', value: baseUnit || 'unit' }]
 }
 
-// Default selected unit when a product is chosen
 function defaultUnit(baseUnit) {
   const base = (baseUnit || '').toLowerCase()
-  if (base === 'kg' || base === 'g')             return 'kg'
+  if (base === 'kg' || base === 'g') return 'kg'
   if (base === 'l' || base === 'ml' || base === 'liter' || base === 'litre') return 'L'
   return baseUnit || 'unit'
 }
 
-// Convert entered (qty, enteredUnit) → quantity in product's base unit
 function toBaseQty(qty, enteredUnit, baseUnit) {
   const num = parseFloat(qty) || 0
-  const eu  = (enteredUnit || '').toLowerCase()
-  const bu  = (baseUnit    || '').toLowerCase()
-
-  // weight
-  if (bu === 'kg') {
-    if (eu === 'g')  return num / 1000
-    return num // kg → kg
-  }
-  if (bu === 'g') {
-    if (eu === 'kg') return num * 1000
-    return num // g → g
-  }
-  // volume
-  if (bu === 'l' || bu === 'liter' || bu === 'litre') {
-    if (eu === 'ml') return num / 1000
-    return num // L → L
-  }
-  if (bu === 'ml') {
-    if (eu === 'l' || eu === 'liter' || eu === 'litre') return num * 1000
-    return num
-  }
-  return num // unknown – no conversion
+  const eu = (enteredUnit || '').toLowerCase()
+  const bu = (baseUnit || '').toLowerCase()
+  if (bu === 'kg') return eu === 'g' ? num / 1000 : num
+  if (bu === 'g') return eu === 'kg' ? num * 1000 : num
+  if (bu === 'l' || bu === 'liter' || bu === 'litre') return eu === 'ml' ? num / 1000 : num
+  if (bu === 'ml') return (eu === 'l' || eu === 'liter' || eu === 'litre') ? num * 1000 : num
+  return num
 }
 
-// Price for one row = pricePerBaseUnit × quantityInBaseUnit
 function rowPrice(price, qty, enteredUnit, baseUnit) {
-  const baseQty = toBaseQty(qty, enteredUnit, baseUnit)
-  return price * baseQty
+  return price * toBaseQty(qty, enteredUnit, baseUnit)
 }
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DailyEntry({ user }) {
-  const canCreate = user?.role === 'ADMIN' || user?.role === 'EMPLOYEE'
   const [customers, setCustomers] = useState([])
-  const [products,  setProducts]  = useState([])
-  const [loading,   setLoading]   = useState(true)
-  const [error,     setError]     = useState('')
-  const [success,   setSuccess]   = useState('')
-
-  // Form state
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [showOnlyAssigned, setShowOnlyAssigned] = useState(user?.role === 'EMPLOYEE')
+  const [selectedShift, setSelectedShift] = useState('MORNING')
   const [selectedCustomer, setSelectedCustomer] = useState('')
-  const [selectedDate,     setSelectedDate]     = useState(new Date().toISOString().split('T')[0])
-  const [purchases, setPurchases] = useState([{
-    productId: '',
-    quantity:  1,
-    unit:      'kg',   // selected unit (may differ from base unit)
-  }])
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [purchases, setPurchases] = useState([{ productId: '', quantity: 1, unit: 'kg' }])
 
   useEffect(() => { fetchInitialData() }, [])
 
@@ -99,29 +54,22 @@ export default function DailyEntry({ user }) {
       setCustomers(cr.data.customers)
       setProducts(pr.data.products)
     } catch (err) {
-      setError('Failed to load data')
-      console.error(err)
+      setError('Could not load data')
     } finally {
       setLoading(false)
     }
   }
 
-  const getProduct      = (id) => products.find(p => p.id === parseInt(id))
+  const getProduct = (id) => products.find(p => p.id === parseInt(id))
   const getProductPrice = (id) => getProduct(id)?.price ?? 0
-  const getProductUnit  = (id) => getProduct(id)?.unit  ?? ''
+  const getProductUnit = (id) => getProduct(id)?.unit ?? ''
 
-  const addPurchase = () =>
-    setPurchases([...purchases, { productId: '', quantity: 1, unit: 'kg' }])
-
-  const removePurchase = (index) => {
-    if (purchases.length > 1) setPurchases(purchases.filter((_, i) => i !== index))
-  }
+  const addPurchase = () => setPurchases([...purchases, { productId: '', quantity: 1, unit: 'kg' }])
+  const removePurchase = (index) => { if (purchases.length > 1) setPurchases(purchases.filter((_, i) => i !== index)) }
 
   const updatePurchase = (index, field, value) => {
     const next = [...purchases]
     next[index] = { ...next[index], [field]: value }
-
-    // When the product changes, reset unit to the product's default
     if (field === 'productId') {
       const prod = products.find(p => p.id === parseInt(value))
       next[index].unit = prod ? defaultUnit(prod.unit) : 'kg'
@@ -142,29 +90,23 @@ export default function DailyEntry({ user }) {
     if (e) e.preventDefault()
     setError('')
     setSuccess('')
-
     if (!selectedCustomer) { setError('Please select a customer'); return }
-
     const validPurchases = purchases.filter(p => p.productId && p.quantity > 0)
-    if (validPurchases.length === 0) {
-      setError('Please add at least one product with quantity > 0')
-      return
-    }
+    if (validPurchases.length === 0) { setError('Add at least one product'); return }
 
     try {
       setLoading(true)
       const purchasePromises = validPurchases.map(p =>
         purchaseAPI.create({
           customerId: parseInt(selectedCustomer),
-          productId:  parseInt(p.productId),
-          // store quantity in product's BASE unit
-          quantity:   toBaseQty(p.quantity, p.unit, getProductUnit(p.productId)),
-          date:       selectedDate,
+          productId: parseInt(p.productId),
+          quantity: toBaseQty(p.quantity, p.unit, getProductUnit(p.productId)),
+          date: selectedDate,
+          shift: selectedShift,
         })
       )
       await Promise.all(purchasePromises)
 
-      // If hand-to-hand payment option is clicked, record a PAID CASH payment immediately
       if (payHandToHand) {
         try {
           const totalAmount = calculateTotal()
@@ -176,241 +118,319 @@ export default function DailyEntry({ user }) {
             year: dateObj.getFullYear(),
             method: 'CASH'
           })
-          // If payment object is initialized or returned, immediately mark as PAID
-          if (payRes.data?.payment?.id) {
-            await paymentAPI.markAsPaid(payRes.data.payment.id)
-          }
+          if (payRes.data?.payment?.id) await paymentAPI.markAsPaid(payRes.data.payment.id)
         } catch (paymentErr) {
-          console.error('Hand-to-hand payment recording failed, but purchases were saved:', paymentErr)
+          console.error('Payment recording failed:', paymentErr)
         }
       }
 
-      setSuccess(payHandToHand ? 'Purchases and cash payment saved successfully!' : 'Purchases saved successfully!')
+      setSuccess(payHandToHand ? '✅ Saved & cash payment recorded!' : '✅ Purchases saved!')
       setPurchases([{ productId: '', quantity: 1, unit: 'kg' }])
       setSelectedCustomer('')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save purchases')
+      setError(err.response?.data?.error || 'Could not save. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
+  const displayCustomers = user?.role === 'EMPLOYEE' && showOnlyAssigned
+    ? customers.filter(c => c.assignedEmployeeId === user.id)
+    : customers
+
   if (loading && customers.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center h-48">
+        <div className="text-4xl animate-bounce">🥛</div>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Daily Purchase Entry</h1>
-        <p className="text-gray-600">Record daily purchases for your customers</p>
+    <div className="space-y-4 pb-32 md:pb-4">
+      <div>
+        <h1 className="page-title">📝 Daily Entry</h1>
+        <p className="page-subtitle">Record what your customers bought today</p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-sm font-medium flex items-center gap-2">
+          <span>⚠️</span> {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-2xl text-sm font-medium flex items-center gap-2">
           {success}
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow">
-        <form onSubmit={handleSubmit} className="p-6">
-
-          {/* Customer + Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Customer *</label>
-              <SearchableCustomerSelect
-                customers={customers}
-                value={selectedCustomer}
-                onChange={(customerId) => {
-                  setSelectedCustomer(customerId)
-                  if (customerId) {
-                    const cust = customers.find(c => c.id === parseInt(customerId))
-                    if (cust && cust.defaultProduct) {
-                      setPurchases([{
-                        productId: String(cust.defaultProduct.id),
-                        quantity: cust.defaultQuantity || 1,
-                        unit: cust.defaultUnit || defaultUnit(cust.defaultProduct.unit)
-                      }])
-                    }
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="card p-4 md:p-6 space-y-4">
+          {/* Customer */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-semibold text-gray-700">👤 Who's buying? *</label>
+              {user?.role === 'EMPLOYEE' && (
+                <label className="inline-flex items-center text-xs text-brand-600 font-bold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyAssigned}
+                    onChange={(e) => setShowOnlyAssigned(e.target.checked)}
+                    className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 mr-1.5 h-4 w-4"
+                  />
+                  My customers only
+                </label>
+              )}
+            </div>
+            <SearchableCustomerSelect
+              customers={displayCustomers}
+              value={selectedCustomer}
+              onChange={(customerId) => {
+                setSelectedCustomer(customerId)
+                if (customerId) {
+                  const cust = customers.find(c => c.id === parseInt(customerId))
+                  if (cust?.defaultProducts?.length > 0) {
+                    setPurchases(cust.defaultProducts.map(dp => ({
+                      productId: String(dp.productId),
+                      quantity: dp.quantity || 1,
+                      unit: dp.unit
+                    })))
+                  } else {
+                    setPurchases([{ productId: '', quantity: 1, unit: '' }])
                   }
-                }}
-                placeholder="Select a customer..."
-                required={true}
+                }
+              }}
+              placeholder="Search customer name or phone..."
+              required={true}
+            />
+          </div>
+
+          {/* Date + Shift */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">📅 Date *</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input text-base py-3 min-h-[52px]"
+                required
               />
             </div>
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-              <div className="relative">
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="date"
-                  id="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">⏰ Time</label>
+              <div className="flex bg-gray-100 p-1 rounded-2xl h-[52px]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedShift('MORNING')}
+                  className={`flex-1 flex items-center justify-center gap-1 text-sm font-semibold rounded-xl transition-all active:scale-95 ${
+                    selectedShift === 'MORNING' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  ☀️ Morning
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedShift('EVENING')}
+                  className={`flex-1 flex items-center justify-center gap-1 text-sm font-semibold rounded-xl transition-all active:scale-95 ${
+                    selectedShift === 'EVENING' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  🌙 Evening
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Products */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">Products</label>
-            <div className="space-y-4">
-              {purchases.map((purchase, index) => {
-                const prod      = getProduct(purchase.productId)
-                const baseUnit  = prod?.unit ?? ''
-                const unitOpts  = prod ? getUnitOptions(baseUnit) : [{ label: 'kg', value: 'kg' }, { label: 'g', value: 'g' }, { label: 'L', value: 'L' }, { label: 'ml', value: 'ml' }]
-                const price     = getProductPrice(purchase.productId)
-                const lineTotal = rowPrice(price, purchase.quantity, purchase.unit, baseUnit)
+        {/* Products */}
+        <div className="card p-4 md:p-6">
+          <label className="text-sm font-semibold text-gray-700 mb-3 block">🥛 What did they buy?</label>
+          <div className="space-y-3">
+            {purchases.map((purchase, index) => {
+              const prod = getProduct(purchase.productId)
+              const baseUnit = prod?.unit ?? ''
+              const unitOpts = prod ? getUnitOptions(baseUnit) : [{ label: 'kg', value: 'kg' }, { label: 'g', value: 'g' }, { label: 'L', value: 'L' }, { label: 'ml', value: 'ml' }]
+              const price = getProductPrice(purchase.productId)
+              const lineTotal = rowPrice(price, purchase.quantity, purchase.unit, baseUnit)
 
-                return (
-                  <div key={index} className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-lg">
+              return (
+                <div key={index} className="bg-gray-50 rounded-2xl p-4 space-y-3 animate-slide-up">
+                  {/* Product select */}
+                  <div>
+                    <label className="text-xs text-gray-500 font-semibold uppercase mb-1.5 block">Product *</label>
+                    <SearchableProductSelect
+                      products={products}
+                      value={purchase.productId}
+                      onChange={(val) => updatePurchase(index, 'productId', val)}
+                      placeholder="Search product..."
+                      required
+                    />
+                  </div>
 
-                    {/* Product select */}
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">Product</label>
-                      <select
-                        value={purchase.productId}
-                        onChange={(e) => updatePurchase(index, 'productId', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        required
-                      >
-                        <option value="">Select product</option>
-                        {products.map(product => (
-                          <option key={product.id} value={product.id}>
-                            {product.productName} - ₹{product.price}/{product.unit}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Quantity + Unit */}
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">
-                        Quantity
-                        {prod && (
-                          <span className="ml-1 text-indigo-500 font-medium">
-                            (rate: ₹{price}/{prod.unit})
-                          </span>
-                        )}
+                  {/* Mobile: stacked */}
+                  <div className="md:hidden space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-500 font-semibold uppercase mb-1.5 block">
+                        How much? {prod && <span className="text-brand-500 normal-case">(₹{price}/{prod.unit})</span>}
                       </label>
-                      <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                        {/* decrement */}
+                      <div className="flex items-center border border-gray-200 rounded-2xl overflow-hidden bg-white">
                         <button
                           type="button"
                           onClick={() => updatePurchase(index, 'quantity', Math.max(0.001, parseFloat(purchase.quantity) - 1))}
-                          className="px-3 py-2 bg-gray-50 hover:bg-gray-100"
+                          className="px-4 py-3.5 text-gray-500 active:bg-gray-100 min-h-[52px] min-w-[52px] flex items-center justify-center"
                         >
-                          <Minus className="w-4 h-4" />
+                          <Minus className="w-5 h-5" />
                         </button>
-
-                        {/* number */}
                         <input
                           type="number"
+                          inputMode="decimal"
                           value={purchase.quantity}
                           onChange={(e) => updatePurchase(index, 'quantity', parseFloat(e.target.value) || 0)}
-                          className="w-20 px-2 py-2 border-0 focus:outline-none text-center"
+                          className="flex-1 px-2 py-3.5 border-0 focus:outline-none text-center text-lg font-bold min-h-[52px]"
                           min="0"
                           step="0.001"
                         />
-
-                        {/* increment */}
                         <button
                           type="button"
                           onClick={() => updatePurchase(index, 'quantity', parseFloat(purchase.quantity) + 1)}
-                          className="px-3 py-2 bg-gray-50 hover:bg-gray-100"
+                          className="px-4 py-3.5 text-gray-500 active:bg-gray-100 min-h-[52px] min-w-[52px] flex items-center justify-center"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-5 h-5" />
                         </button>
+                      </div>
+                    </div>
 
-                        {/* unit selector */}
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 font-semibold uppercase mb-1.5 block">Unit</label>
                         <select
                           value={purchase.unit}
                           onChange={(e) => updatePurchase(index, 'unit', e.target.value)}
-                          className="border-l border-gray-300 px-2 py-2 bg-indigo-50 text-indigo-700 font-semibold focus:outline-none text-sm"
+                          className="select text-base py-3 min-h-[52px]"
                         >
-                          {unitOpts.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
+                          {unitOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <label className="text-xs text-gray-500 font-semibold uppercase mb-1.5 block">Price</label>
+                        <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl font-bold text-gray-900 text-lg min-h-[52px] flex items-center">
+                          ₹{lineTotal.toFixed(2)}
+                        </div>
+                      </div>
+                      {purchases.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePurchase(index)}
+                          className="p-3 text-rose-500 active:bg-rose-50 rounded-xl transition-colors min-h-[52px] min-w-[52px] flex items-center justify-center"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Desktop: horizontal */}
+                  <div className="hidden md:flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase mb-1 block">
+                        Qty {prod && <span className="text-brand-500 normal-case">(₹{price}/{prod.unit})</span>}
+                      </label>
+                      <div className="flex items-center border border-gray-200 rounded-2xl overflow-hidden bg-white">
+                        <button type="button" onClick={() => updatePurchase(index, 'quantity', Math.max(0.001, parseFloat(purchase.quantity) - 1))} className="px-3 py-2.5 text-gray-500 hover:bg-gray-50 touch-target">
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input type="number" value={purchase.quantity} onChange={(e) => updatePurchase(index, 'quantity', parseFloat(e.target.value) || 0)} className="w-16 px-1 py-2.5 border-0 focus:outline-none text-center text-sm font-semibold" min="0" step="0.001" />
+                        <button type="button" onClick={() => updatePurchase(index, 'quantity', parseFloat(purchase.quantity) + 1)} className="px-3 py-2.5 text-gray-500 hover:bg-gray-50 touch-target">
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        <select value={purchase.unit} onChange={(e) => updatePurchase(index, 'unit', e.target.value)} className="border-l border-gray-200 px-2 py-2.5 bg-brand-50 text-brand-700 font-semibold focus:outline-none text-xs">
+                          {unitOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
                     </div>
-
-                    {/* Line price */}
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">Price</label>
-                      <div className="px-3 py-2 bg-gray-50 rounded-md font-semibold text-gray-800">
+                    <div className="flex-shrink-0">
+                      <label className="text-[10px] text-gray-500 font-semibold uppercase mb-1 block">Price</label>
+                      <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-2xl font-bold text-gray-900 text-sm min-w-[70px] text-center">
                         ₹{lineTotal.toFixed(2)}
                       </div>
                     </div>
-
-                    {/* Remove */}
                     {purchases.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePurchase(index)}
-                        className="self-center p-2 text-red-600 hover:text-red-800"
-                      >
-                        <Minus className="w-5 h-5" />
+                      <button type="button" onClick={() => removePurchase(index)} className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors touch-target">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
-                )
-              })}
+                </div>
+              )
+            })}
+          </div>
+
+          <button type="button" onClick={addPurchase} className="mt-4 flex items-center gap-2 text-brand-600 active:text-brand-800 text-sm font-semibold min-h-[48px]">
+            <PlusCircle className="w-5 h-5" />
+            Add Another Product
+          </button>
+        </div>
+      </form>
+
+      {/* Sticky bottom bar - mobile */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
+        <div className="bg-white border-t border-gray-200 shadow-bottom-nav">
+          <div className="px-4 py-3">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-base font-bold text-gray-700">Total</span>
+              <span className="text-3xl font-extrabold text-brand-600">₹{calculateTotal().toFixed(2)}</span>
             </div>
-
-            <button
-              type="button"
-              onClick={addPurchase}
-              className="mt-4 flex items-center px-4 py-2 text-indigo-600 hover:text-indigo-800"
-            >
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Add Another Product
-            </button>
-          </div>
-
-          {/* Total */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-900">Total Amount:</span>
-              <span className="text-2xl font-bold text-indigo-600">₹{calculateTotal().toFixed(2)}</span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, true)}
+                disabled={loading}
+                className="btn-success flex-1 h-14 text-base active:scale-95"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  '💵 Cash Paid'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, false)}
+                disabled={loading}
+                className="btn-primary flex-1 h-14 text-base active:scale-95"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5 mr-1.5" />
+                    Save
+                  </>
+                )}
+              </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Submit */}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(e, true)}
-              disabled={loading}
-              className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="mr-2">💵</span>
-              {loading ? 'Processing...' : 'Paid by Cash'}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              {loading ? 'Saving...' : 'Save Purchases'}
-            </button>
+      {/* Desktop: inline */}
+      <div className="hidden md:block space-y-4">
+        <div className="card p-4 md:p-6 bg-gradient-to-r from-brand-50 to-emerald-50 border-brand-100">
+          <div className="flex justify-between items-center">
+            <span className="text-base font-bold text-gray-700">Total Amount</span>
+            <span className="text-3xl font-extrabold text-brand-600">₹{calculateTotal().toFixed(2)}</span>
           </div>
-        </form>
+        </div>
+        <div className="flex gap-3">
+          <button type="button" onClick={(e) => handleSubmit(e, true)} disabled={loading} className="btn-success flex-1 h-12">
+            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : '💵 Cash Paid'}
+          </button>
+          <button type="submit" disabled={loading} className="btn-primary flex-1 h-12">
+            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Save className="w-4 h-4 mr-1.5" />Save</>}
+          </button>
+        </div>
       </div>
     </div>
   )

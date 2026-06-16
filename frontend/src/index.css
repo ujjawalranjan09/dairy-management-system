@@ -1,3 +1,170 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    overscroll-behavior: none;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  textarea,
+  select {
+    @apply text-base;
+    font-size: 16px !important;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-card;
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply relative inline-flex items-center justify-center;
+    @apply px-5 py-3 rounded-2xl font-semibold text-sm;
+    @apply transition-all duration-200 ease-out;
+    @apply active:scale-[0.97] select-none;
+    @apply min-h-[52px];
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-600 text-white;
+    @apply hover:bg-brand-700 active:bg-brand-800;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-700;
+    @apply hover:bg-gray-200 active:bg-gray-300;
+  }
+
+  .btn-success {
+    @apply btn bg-emerald-600 text-white;
+    @apply hover:bg-emerald-700 active:bg-emerald-800;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply btn bg-rose-500 text-white;
+    @apply hover:bg-rose-600 active:bg-rose-700;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl;
+    @apply text-gray-900 placeholder-gray-400 text-base font-medium;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white;
+    @apply min-h-[52px];
+  }
+
+  /* Select */
+  .select {
+    @apply w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl;
+    @apply text-gray-900 text-base font-medium appearance-none;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white;
+    @apply min-h-[52px];
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  /* Page title */
+  .page-title {
+    @apply text-xl md:text-2xl font-extrabold tracking-tight text-gray-900;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-gray-500 mt-1;
+  }
+
+  /* Bottom nav spacing */
+  .has-bottom-nav {
+    @apply pb-24 md:pb-6;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
+  }
+
+  .badge-success {
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-50 text-amber-700 border border-amber-200;
+  }
+
+  .badge-danger {
+    @apply badge bg-rose-50 text-rose-700 border border-rose-200;
+  }
+
+  .badge-info {
+    @apply badge bg-sky-50 text-sky-700 border border-sky-200;
+  }
+
+  .badge-purple {
+    @apply badge bg-purple-50 text-purple-700 border border-purple-200;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* List item */
+  .list-item {
+    @apply flex items-center justify-between p-4 rounded-2xl;
+    @apply active:bg-gray-50 transition-all duration-200;
+  }
+
+  /* Touch target */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Safe area */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

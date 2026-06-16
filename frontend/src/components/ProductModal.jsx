@@ -15,131 +15,68 @@ export default function ProductModal({ isOpen, onClose, product, onSave }) {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     try {
       if (product) {
-        // Update existing product
         const response = await productAPI.update(product.id, formData)
         onSave(response.data.product)
       } else {
-        // Create new product
         const response = await productAPI.create(formData)
         onSave(response.data.product)
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Operation failed')
+      setError(err.response?.data?.error || 'Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
-        
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {product ? 'Edit Product' : 'Add Product'}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label htmlFor="productName" className="block text-sm font-medium text-gray-700">
-                    Product Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="productName"
-                    name="productName"
-                    required
-                    value={formData.productName}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                    Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="unit" className="block text-sm font-medium text-gray-700">
-                    Unit *
-                  </label>
-                  <input
-                    type="text"
-                    id="unit"
-                    name="unit"
-                    required
-                    value={formData.unit}
-                    onChange={handleChange}
-                    placeholder="e.g., 1L, 500g, 1kg"
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-            </form>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+      <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl animate-slide-up">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🥛</span>
+            <h3 className="text-lg font-bold text-gray-900">{product ? 'Edit Product' : 'Add Product'}</h3>
           </div>
-          
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update Product' : 'Add Product')}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Cancel
-            </button>
-          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="w-5 h-5" />
+          </button>
         </div>
+
+        {error && (
+          <div className="mx-5 mt-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-sm font-medium">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📦 Product Name *</label>
+            <input type="text" name="productName" required value={formData.productName} onChange={handleChange} className="input" placeholder="e.g. Full Cream Milk" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1.5 block">💰 Price (₹) *</label>
+              <input type="number" name="price" step="0.01" min="0" required value={formData.price} onChange={handleChange} className="input" placeholder="0.00" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📏 Unit *</label>
+              <input type="text" name="unit" required value={formData.unit} onChange={handleChange} className="input" placeholder="kg, L, etc." />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-3 border-t border-gray-100">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 h-12">Cancel</button>
+            <button type="submit" disabled={isLoading} className="btn-primary flex-1 h-12">
+              {isLoading ? 'Saving...' : product ? '✅ Update' : '✅ Add Product'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

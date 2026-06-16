@@ -1,45 +1,40 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronsUpDown, X, Search, Phone, User } from 'lucide-react'
+import { Check, ChevronsUpDown, X, Search, Package } from 'lucide-react'
 
-function CustomerListItem({ customer, isSelected, onSelect }) {
+function ProductListItem({ product, isSelected, onSelect }) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(customer)}
+      onClick={() => onSelect(product)}
       className={`w-full px-4 py-3.5 text-left flex items-center gap-3 transition-colors active:bg-gray-100 ${
         isSelected ? 'bg-brand-50' : ''
       }`}
     >
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 font-bold text-sm ${
-        isSelected ? 'bg-brand-200 text-brand-700' : 'bg-brand-100 text-brand-700'
+      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg ${
+        isSelected ? 'bg-brand-200 text-brand-700' : 'bg-brand-100 text-brand-600'
       }`}>
-        {customer.name.charAt(0).toUpperCase()}
+        🥛
       </div>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${isSelected ? 'text-brand-900' : 'text-gray-900'}`}>
-          {customer.name}
+          {product.productName}
         </p>
-        {customer.phoneNumber && (
-          <p className="text-xs text-gray-400 font-medium mt-0.5 flex items-center gap-1">
-            <Phone className="w-3 h-3" />
-            {customer.phoneNumber}
-          </p>
-        )}
+        <p className="text-xs text-gray-400 font-medium mt-0.5">
+          ₹{product.price}/{product.unit}
+        </p>
       </div>
       {isSelected && <Check className="w-5 h-5 text-brand-600 flex-shrink-0" />}
     </button>
   )
 }
 
-export default function SearchableCustomerSelect({
-  customers = [],
+export default function SearchableProductSelect({
+  products = [],
   value = '',
   onChange,
-  placeholder = 'Search customer...',
+  placeholder = 'Search product...',
   required = false,
-  showAllOption = false,
-  allOptionLabel = 'All Customers',
   disabled = false
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -48,7 +43,7 @@ export default function SearchableCustomerSelect({
   const dropdownRef = useRef(null)
   const searchInputRef = useRef(null)
 
-  const selectedCustomer = customers.find(c => c.id.toString() === value?.toString())
+  const selectedProduct = products.find(p => p.id.toString() === value?.toString())
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -58,22 +53,21 @@ export default function SearchableCustomerSelect({
   }, [])
 
   useEffect(() => {
-    if (selectedCustomer) setSearchTerm(selectedCustomer.name)
-    else if (value === '') setSearchTerm(showAllOption ? allOptionLabel : '')
-  }, [value, selectedCustomer, showAllOption, allOptionLabel])
+    if (selectedProduct) setSearchTerm(selectedProduct.productName)
+    else setSearchTerm('')
+  }, [value, selectedProduct])
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false)
-        if (selectedCustomer) setSearchTerm(selectedCustomer.name)
-        else if (value === '') setSearchTerm(showAllOption ? allOptionLabel : '')
+        if (selectedProduct) setSearchTerm(selectedProduct.productName)
         else setSearchTerm('')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [selectedCustomer, value, showAllOption, allOptionLabel])
+  }, [selectedProduct])
 
   useEffect(() => {
     if (isOpen && isMobile && searchInputRef.current) {
@@ -81,21 +75,15 @@ export default function SearchableCustomerSelect({
     }
   }, [isOpen, isMobile])
 
-  const filteredCustomers = customers.filter(customer => {
+  const filteredProducts = products.filter(product => {
     const term = searchTerm.toLowerCase()
-    if (selectedCustomer && selectedCustomer.name === searchTerm) return true
-    if (showAllOption && searchTerm === allOptionLabel) return true
-    return customer.name.toLowerCase().includes(term) || (customer.phoneNumber && customer.phoneNumber.includes(term))
+    if (selectedProduct && selectedProduct.productName === searchTerm) return true
+    return product.productName.toLowerCase().includes(term)
   })
 
-  const handleSelect = (customer) => {
-    if (customer === null) {
-      onChange('')
-      setSearchTerm(showAllOption ? allOptionLabel : '')
-    } else {
-      onChange(customer.id.toString())
-      setSearchTerm(customer.name)
-    }
+  const handleSelect = (product) => {
+    onChange(product.id.toString())
+    setSearchTerm(product.productName)
     setIsOpen(false)
   }
 
@@ -108,8 +96,7 @@ export default function SearchableCustomerSelect({
 
   const handleClose = () => {
     setIsOpen(false)
-    if (selectedCustomer) setSearchTerm(selectedCustomer.name)
-    else if (value === '') setSearchTerm(showAllOption ? allOptionLabel : '')
+    if (selectedProduct) setSearchTerm(selectedProduct.productName)
     else setSearchTerm('')
   }
 
@@ -122,42 +109,21 @@ export default function SearchableCustomerSelect({
 
   const content = (
     <div className="py-1">
-      {showAllOption && (
-        <button
-          type="button"
-          onClick={() => handleSelect(null)}
-          className={`w-full px-4 py-3.5 text-left flex items-center gap-3 transition-colors active:bg-gray-100 ${
-            !value ? 'bg-brand-50' : ''
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-            !value ? 'bg-brand-200 text-brand-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <User className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <p className={`text-sm font-semibold ${!value ? 'text-brand-900' : 'text-gray-900'}`}>
-              {allOptionLabel}
-            </p>
-          </div>
-          {!value && <Check className="w-5 h-5 text-brand-600 flex-shrink-0" />}
-        </button>
-      )}
-      {filteredCustomers.map(customer => {
-        const isSelected = value?.toString() === customer.id.toString()
+      {filteredProducts.map(product => {
+        const isSelected = value?.toString() === product.id.toString()
         return (
-          <CustomerListItem
-            key={customer.id}
-            customer={customer}
+          <ProductListItem
+            key={product.id}
+            product={product}
             isSelected={isSelected}
             onSelect={handleSelect}
           />
         )
       })}
-      {filteredCustomers.length === 0 && (
+      {filteredProducts.length === 0 && (
         <div className="px-4 py-8 text-center">
-          <div className="text-4xl mb-2">👤</div>
-          <p className="text-sm text-gray-400 font-medium">No customers found</p>
+          <div className="text-4xl mb-2">📦</div>
+          <p className="text-sm text-gray-400 font-medium">No products found</p>
         </div>
       )}
     </div>
@@ -207,7 +173,7 @@ export default function SearchableCustomerSelect({
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="🔍 Search customers..."
+                    placeholder="🔍 Search products..."
                     className="w-full pl-12 pr-4 py-3.5 bg-gray-100 rounded-2xl text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 min-h-[52px]"
                   />
                 </div>
@@ -240,7 +206,7 @@ export default function SearchableCustomerSelect({
           onChange={(e) => { setSearchTerm(e.target.value); setIsOpen(true) }}
           onFocus={() => {
             setIsOpen(true)
-            if (selectedCustomer || (showAllOption && searchTerm === allOptionLabel)) setSearchTerm('')
+            if (selectedProduct) setSearchTerm('')
           }}
           placeholder={placeholder}
           disabled={disabled}
@@ -260,41 +226,30 @@ export default function SearchableCustomerSelect({
       {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-60 overflow-y-auto scrollbar-hide">
           <ul className="py-1">
-            {showAllOption && (
-              <li
-                onMouseDown={(e) => { e.preventDefault(); handleSelect(null) }}
-                className={`px-3 py-2.5 cursor-pointer hover:bg-brand-50 text-sm flex items-center justify-between mx-1 rounded-xl transition-colors ${
-                  !value ? 'bg-brand-50/50 font-semibold text-brand-700' : 'text-gray-600'
-                }`}
-              >
-                <span>{allOptionLabel}</span>
-                {!value && <Check className="w-4 h-4 text-brand-600" />}
-              </li>
-            )}
-            {filteredCustomers.map(customer => {
-              const isSelected = value?.toString() === customer.id.toString()
+            {filteredProducts.map(product => {
+              const isSelected = value?.toString() === product.id.toString()
               return (
                 <li
-                  key={customer.id}
-                  onMouseDown={(e) => { e.preventDefault(); handleSelect(customer) }}
+                  key={product.id}
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(product) }}
                   className={`px-3 py-2.5 cursor-pointer hover:bg-brand-50 text-sm flex items-center justify-between mx-1 rounded-xl transition-colors ${
                     isSelected ? 'bg-brand-50/70 font-semibold text-brand-700' : 'text-gray-600'
                   }`}
                 >
                   <div className="flex flex-col">
                     <span className={isSelected ? 'text-brand-900 font-semibold' : 'text-gray-900 font-medium'}>
-                      {customer.name}
+                      {product.productName}
                     </span>
-                    {customer.phoneNumber && (
-                      <span className="text-[10px] text-gray-400 font-medium">📱 {customer.phoneNumber}</span>
-                    )}
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      ₹{product.price}/{product.unit}
+                    </span>
                   </div>
                   {isSelected && <Check className="w-4 h-4 text-brand-600 flex-shrink-0" />}
                 </li>
               )
             })}
-            {filteredCustomers.length === 0 && (
-              <li className="px-3 py-4 text-center text-xs text-gray-400 italic">No matching customers</li>
+            {filteredProducts.length === 0 && (
+              <li className="px-3 py-4 text-center text-xs text-gray-400 italic">No matching products</li>
             )}
           </ul>
         </div>

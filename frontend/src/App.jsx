@@ -12,7 +12,6 @@ import Users from './pages/Users'
 import Layout from './components/Layout'
 import { authAPI } from './services/api'
 
-// Role constants (match backend)
 const ROLES = {
   ADMIN: 'ADMIN',
   EMPLOYEE: 'EMPLOYEE',
@@ -29,13 +28,11 @@ function App() {
       const token = localStorage.getItem('token')
       if (token) {
         try {
-          // Fetch fresh profile (gets latest role etc)
           const response = await authAPI.getProfile()
           const userData = response.data.user
           setUser(userData)
           setIsAuthenticated(true)
         } catch (err) {
-          // Invalid/expired token
           localStorage.removeItem('token')
           setIsAuthenticated(false)
           setUser(null)
@@ -57,58 +54,48 @@ function App() {
     localStorage.removeItem('token')
   }
 
-  // Role helpers
-  const isAdmin = user?.role === ROLES.ADMIN
-  const isEmployee = user?.role === ROLES.EMPLOYEE
-  const isCustomer = user?.role === ROLES.CUSTOMER
-
-  // Get default landing page per role
-  const getDefaultRoute = () => {
-    if (isCustomer) return '/dashboard' // Dashboard adapts for customer
-    return '/dashboard'
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-brand-50 to-white">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="text-6xl">🥛</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+          <p className="text-sm text-gray-400 font-medium">Loading your shop...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 font-sans">
         {isAuthenticated && user ? (
           <Layout onLogout={handleLogout} user={user} role={user.role}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard user={user} />} />
-
-              {/* ADMIN + EMPLOYEE mainly */}
               <Route 
                 path="/customers" 
-                element={isCustomer ? <Navigate to="/dashboard" replace /> : <Customers user={user} />} 
+                element={user.role === ROLES.CUSTOMER ? <Navigate to="/dashboard" replace /> : <Customers user={user} />} 
               />
               <Route 
                 path="/products" 
-                element={!isAdmin ? <Navigate to="/dashboard" replace /> : <Products user={user} />} 
+                element={user.role !== ROLES.ADMIN ? <Navigate to="/dashboard" replace /> : <Products user={user} />} 
               />
               <Route 
                 path="/daily-entry" 
-                element={isCustomer ? <Navigate to="/dashboard" replace /> : <DailyEntry user={user} />} 
+                element={user.role === ROLES.CUSTOMER ? <Navigate to="/dashboard" replace /> : <DailyEntry user={user} />} 
               />
-
-              {/* Billing & Payments - CUSTOMER sees filtered own data */}
               <Route path="/billing" element={<Billing user={user} />} />
               <Route path="/payments" element={<Payments user={user} />} />
-
-              {/* ADMIN only: User / Staff & Customer Portal management */}
               <Route 
                 path="/users" 
-                element={isAdmin ? <Users user={user} /> : <Navigate to="/dashboard" replace />} 
+                element={user.role === ROLES.ADMIN ? <Users user={user} /> : <Navigate to="/dashboard" replace />} 
               />
-
-              <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Layout>
         ) : (

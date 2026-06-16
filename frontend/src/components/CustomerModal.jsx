@@ -1,83 +1,84 @@
 import { useState, useEffect } from 'react'
 import { customerAPI, productAPI, authAPI } from '../services/api'
-import { X } from 'lucide-react'
+import { X, Plus, Trash2 } from 'lucide-react'
 
 export default function CustomerModal({ isOpen, onClose, customer, onSave }) {
   const [formData, setFormData] = useState({
     name: customer?.name || '',
     phoneNumber: customer?.phoneNumber || '',
     address: customer?.address || '',
-    defaultProductId: customer?.defaultProductId || '',
-    defaultQuantity: customer?.defaultQuantity || 1,
-    defaultUnit: customer?.defaultUnit || '',
     assignedEmployeeId: customer?.assignedEmployeeId || ''
   })
+  const [defaultProducts, setDefaultProducts] = useState([])
   const [products, setProducts] = useState([])
   const [employees, setEmployees] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Reload form data when customer prop changes
   useEffect(() => {
     setFormData({
       name: customer?.name || '',
       phoneNumber: customer?.phoneNumber || '',
       address: customer?.address || '',
-      defaultProductId: customer?.defaultProductId || '',
-      defaultQuantity: customer?.defaultQuantity || 1,
-      defaultUnit: customer?.defaultUnit || '',
       assignedEmployeeId: customer?.assignedEmployeeId || ''
     })
+    if (customer?.defaultProducts) {
+      setDefaultProducts(customer.defaultProducts.map(dp => ({
+        productId: dp.productId.toString(), quantity: dp.quantity, unit: dp.unit
+      })))
+    } else {
+      setDefaultProducts([])
+    }
   }, [customer])
 
-  // Fetch products and employees
   useEffect(() => {
     if (!isOpen) return
     const fetchMeta = async () => {
       try {
-        const [prodRes, usersRes] = await Promise.all([
-          productAPI.getAll(),
-          authAPI.getUsers()
-        ])
+        const [prodRes, usersRes] = await Promise.all([productAPI.getAll(), authAPI.getUsers()])
         setProducts(prodRes.data.products || [])
-        // Filter for EMPLOYEE and ADMIN users only
-        const allUsers = usersRes.data.users || []
-        setEmployees(allUsers.filter(u => u.role === 'EMPLOYEE' || u.role === 'ADMIN'))
-      } catch (err) {
-        console.error('Failed to load products/employees', err)
-      }
+        setEmployees((usersRes.data.users || []).filter(u => u.role === 'EMPLOYEE' || u.role === 'ADMIN'))
+      } catch (err) { console.error(err) }
     }
     fetchMeta()
   }, [isOpen])
 
-  // When default product changes, auto-set the default unit
-  const handleProductChange = (e) => {
-    const productId = e.target.value
-    const selected = products.find(p => p.id === parseInt(productId))
-    setFormData(prev => ({
-      ...prev,
-      defaultProductId: productId,
-      defaultUnit: selected ? selected.unit : ''
-    }))
+  const handleAddDefaultProduct = () => setDefaultProducts(prev => [...prev, { productId: '', quantity: 1, unit: '' }])
+  const handleRemoveDefaultProduct = (index) => setDefaultProducts(prev => prev.filter((_, i) => i !== index))
+
+  const handleDefaultProductChange = (index, field, value) => {
+    setDefaultProducts(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      if (field === 'productId') {
+        const selected = products.find(p => p.id === parseInt(value))
+        updated[index].unit = selected ? selected.unit : ''
+      }
+      return updated
+    })
+  }
+
+  const getUnitOptions = (productId) => {
+    const selectedProduct = products.find(p => p.id === parseInt(productId))
+    if (!selectedProduct) return <option value="">Unit</option>
+    const base = (selectedProduct.unit || '').toLowerCase()
+    if (base === 'kg' || base === 'g') return <><option value="kg">kg</option><option value="g">g</option></>
+    if (base === 'l' || base === 'ml' || base === 'liter' || base === 'litre') return <><option value="L">L</option><option value="ml">ml</option></>
+    return <option value={selectedProduct.unit}>{selectedProduct.unit}</option>
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-
     try {
-      // Build payload - convert empty strings to null for optional fields
+      const filteredDefaults = defaultProducts.filter(dp => dp.productId).map(dp => ({
+        productId: parseInt(dp.productId), quantity: parseFloat(dp.quantity) || 1, unit: dp.unit
+      }))
       const payload = {
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        address: formData.address,
-        defaultProductId: formData.defaultProductId || null,
-        defaultQuantity: formData.defaultProductId ? parseFloat(formData.defaultQuantity) || 1 : null,
-        defaultUnit: formData.defaultProductId ? formData.defaultUnit : null,
-        assignedEmployeeId: formData.assignedEmployeeId || null
+        name: formData.name, phoneNumber: formData.phoneNumber, address: formData.address,
+        defaultProducts: filteredDefaults, assignedEmployeeId: formData.assignedEmployeeId || null
       }
-
       if (customer) {
         const response = await customerAPI.update(customer.id, payload)
         onSave(response.data.customer)
@@ -86,220 +87,100 @@ export default function CustomerModal({ isOpen, onClose, customer, onSave }) {
         onSave(response.data.customer)
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Operation failed')
+      setError(err.response?.data?.error || 'Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
 
   if (!isOpen) return null
 
-  const selectedProduct = products.find(p => p.id === parseInt(formData.defaultProductId))
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
-        
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-        
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {customer ? 'Edit Customer' : 'Add Customer'}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+      <div className="relative bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
+        <div className="sticky top-0 bg-white/90 backdrop-blur-xl px-5 py-4 border-b border-gray-100 flex items-center justify-between z-10">
+          <h3 className="text-lg font-bold text-gray-900">{customer ? '✏️ Edit Customer' : '➕ Add Customer'}</h3>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mx-5 mt-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-sm font-medium">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">👤 Customer Name *</label>
+            <input type="text" name="name" required value={formData.name} onChange={handleChange} className="input" placeholder="Enter customer name" />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📱 Phone Number *</label>
+            <input type="tel" name="phoneNumber" required value={formData.phoneNumber} onChange={handleChange} className="input" placeholder="Enter phone number" />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📍 Address</label>
+            <textarea name="address" rows={2} value={formData.address} onChange={handleChange} className="input resize-none" placeholder="Enter address (optional)"></textarea>
+          </div>
+
+          {/* Default Products */}
+          <div className="border-t border-gray-100 pt-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-bold text-gray-700">🥛 Default Products</label>
+              <button type="button" onClick={handleAddDefaultProduct} className="text-xs font-bold text-brand-600 active:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-xl">
+                <Plus className="w-3 h-3 inline mr-0.5" />Add
               </button>
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
+            {defaultProducts.length === 0 ? (
+              <div className="text-center py-4 bg-gray-50 border border-dashed border-gray-200 rounded-2xl text-xs text-gray-400 font-medium">
+                No default products. Click "+ Add" to set what this customer usually buys.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
+                {defaultProducts.map((dp, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <div className="flex-1 min-w-0">
+                      <select value={dp.productId} onChange={(e) => handleDefaultProductChange(index, 'productId', e.target.value)} className="select text-xs py-2">
+                        <option value="">Select product...</option>
+                        {products.map(p => <option key={p.id} value={p.id}>{p.productName} (₹{p.price})</option>)}
+                      </select>
+                    </div>
+                    <input type="number" min="0.001" step="0.001" placeholder="Qty" value={dp.quantity} onChange={(e) => handleDefaultProductChange(index, 'quantity', e.target.value)} className="w-16 px-2 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <div className="w-16">
+                      <select value={dp.unit} onChange={(e) => handleDefaultProductChange(index, 'unit', e.target.value)} className="select text-xs py-2">
+                        {getUnitOptions(dp.productId)}
+                      </select>
+                    </div>
+                    <button type="button" onClick={() => handleRemoveDefaultProduct(index)} className="p-2 text-rose-500 active:bg-rose-50 rounded-xl">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-4">
-                {/* Basic Info */}
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Customer Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    required
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    rows={2}
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  ></textarea>
-                </div>
-
-                {/* Separator */}
-                <div className="border-t pt-3">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">Default Purchase Settings</p>
-
-                  {/* Default Product */}
-                  <div className="mb-3">
-                    <label htmlFor="defaultProductId" className="block text-sm font-medium text-gray-700">
-                      Default Product
-                    </label>
-                    <select
-                      id="defaultProductId"
-                      name="defaultProductId"
-                      value={formData.defaultProductId}
-                      onChange={handleProductChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="">— No default product —</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.productName} — ₹{p.price}/{p.unit}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Default Quantity and Unit — only show if a product is selected */}
-                  {formData.defaultProductId && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label htmlFor="defaultQuantity" className="block text-sm font-medium text-gray-700">
-                          Default Quantity
-                        </label>
-                        <input
-                          type="number"
-                          id="defaultQuantity"
-                          name="defaultQuantity"
-                          min="0.001"
-                          step="0.001"
-                          value={formData.defaultQuantity}
-                          onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="defaultUnit" className="block text-sm font-medium text-gray-700">
-                          Unit
-                        </label>
-                        <select
-                          id="defaultUnit"
-                          name="defaultUnit"
-                          value={formData.defaultUnit}
-                          onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                          {selectedProduct && (() => {
-                            const base = (selectedProduct.unit || '').toLowerCase()
-                            if (base === 'kg' || base === 'g') {
-                              return (
-                                <>
-                                  <option value="kg">kg</option>
-                                  <option value="g">g</option>
-                                </>
-                              )
-                            }
-                            if (base === 'l' || base === 'ml' || base === 'liter' || base === 'litre') {
-                              return (
-                                <>
-                                  <option value="L">L</option>
-                                  <option value="ml">ml</option>
-                                </>
-                              )
-                            }
-                            return <option value={selectedProduct.unit}>{selectedProduct.unit}</option>
-                          })()}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Assigned Employee */}
-                <div>
-                  <label htmlFor="assignedEmployeeId" className="block text-sm font-medium text-gray-700">
-                    Assigned Employee
-                    <span className="text-gray-400 font-normal text-xs ml-1">(others can still enter data)</span>
-                  </label>
-                  <select
-                    id="assignedEmployeeId"
-                    name="assignedEmployeeId"
-                    value={formData.assignedEmployeeId}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">— No specific employee —</option>
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.role}) — {emp.phone}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </form>
           </div>
-          
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (customer ? 'Updating...' : 'Creating...') : (customer ? 'Update Customer' : 'Add Customer')}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Cancel
+
+          {/* Assigned Employee */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">👤 Assign to Staff</label>
+            <select name="assignedEmployeeId" value={formData.assignedEmployeeId} onChange={handleChange} className="select text-sm">
+              <option value="">No specific staff member</option>
+              {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name} ({emp.role === 'ADMIN' ? 'Owner' : 'Staff'})</option>)}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-3 border-t border-gray-100">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 h-12">Cancel</button>
+            <button type="submit" disabled={isLoading} className="btn-primary flex-1 h-12">
+              {isLoading ? 'Saving...' : customer ? '✅ Update' : '✅ Add Customer'}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )
