@@ -11,6 +11,7 @@ services:
     rootDir: backend
     buildCommand: npm install && node node_modules/prisma/build/index.js generate
     startCommand: node node_modules/prisma/build/index.js db push --accept-data-loss && node server.js
+    nodeVersion: 20.19.2
     envVars:
       - key: PORT
         value: 5000
@@ -36,4 +37,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://dairy-backend-rg4l.onrender.com/api
